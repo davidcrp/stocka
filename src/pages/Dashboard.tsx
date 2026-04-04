@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart3, Car, DollarSign, TrendingUp, Users, AlertTriangle } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { differenceInDays, format } from "date-fns";
+import { differenceInDays } from "date-fns";
 
 type Stats = {
   totalVehicles: number;

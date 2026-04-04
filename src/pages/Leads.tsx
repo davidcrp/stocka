@@ -100,7 +100,7 @@ const Leads = () => {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from("leads").update({ status, last_contact_at: new Date().toISOString() }).eq("id", id);
+    await supabase.from("leads").update({ status: status as any, last_contact_at: new Date().toISOString() }).eq("id", id);
     fetchLeads();
   };
 
