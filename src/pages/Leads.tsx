@@ -81,8 +81,13 @@ const Leads = () => {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     const { error } = await supabase.from("leads").insert({
-      ...form,
-      assigned_to: user?.id,
+      name: form.name,
+      phone: form.phone || null,
+      email: form.email || null,
+      source: form.source as any,
+      notes: form.notes || null,
+      proposed_value: form.proposed_value || null,
+      assigned_to: user?.id || null,
     });
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
