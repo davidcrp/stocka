@@ -14,7 +14,268 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          email: string | null
+          id: string
+          last_contact_at: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          proposed_value: number | null
+          source: Database["public"]["Enums"]["lead_source"] | null
+          status: Database["public"]["Enums"]["lead_status"] | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contact_at?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          proposed_value?: number | null
+          source?: Database["public"]["Enums"]["lead_source"] | null
+          status?: Database["public"]["Enums"]["lead_status"] | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contact_at?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          proposed_value?: number | null
+          source?: Database["public"]["Enums"]["lead_source"] | null
+          status?: Database["public"]["Enums"]["lead_status"] | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sales: {
+        Row: {
+          commission: number | null
+          created_at: string
+          final_price: number
+          id: string
+          lead_id: string | null
+          notes: string | null
+          payment_method: string | null
+          sale_date: string
+          seller_id: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          commission?: number | null
+          created_at?: string
+          final_price: number
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          sale_date?: string
+          seller_id?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          commission?: number | null
+          created_at?: string
+          final_price?: number
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          sale_date?: string
+          seller_id?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          expense_date: string | null
+          expense_type: string
+          id: string
+          vehicle_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          expense_date?: string | null
+          expense_type: string
+          id?: string
+          vehicle_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          expense_date?: string | null
+          expense_type?: string
+          id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_expenses_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          brand: string
+          color: string | null
+          created_at: string
+          created_by: string | null
+          entry_date: string
+          final_sale_price: number | null
+          fipe_code: string | null
+          fuel: string | null
+          id: string
+          listing_price: number | null
+          mileage: number | null
+          model: string
+          notes: string | null
+          photos: string[] | null
+          plate: string | null
+          purchase_price: number
+          reconditioning_cost: number | null
+          sale_date: string | null
+          status: Database["public"]["Enums"]["vehicle_status"] | null
+          suggested_price: number | null
+          transmission: string | null
+          updated_at: string
+          year_fab: number
+          year_model: number
+        }
+        Insert: {
+          brand: string
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          final_sale_price?: number | null
+          fipe_code?: string | null
+          fuel?: string | null
+          id?: string
+          listing_price?: number | null
+          mileage?: number | null
+          model: string
+          notes?: string | null
+          photos?: string[] | null
+          plate?: string | null
+          purchase_price?: number
+          reconditioning_cost?: number | null
+          sale_date?: string | null
+          status?: Database["public"]["Enums"]["vehicle_status"] | null
+          suggested_price?: number | null
+          transmission?: string | null
+          updated_at?: string
+          year_fab: number
+          year_model: number
+        }
+        Update: {
+          brand?: string
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          final_sale_price?: number | null
+          fipe_code?: string | null
+          fuel?: string | null
+          id?: string
+          listing_price?: number | null
+          mileage?: number | null
+          model?: string
+          notes?: string | null
+          photos?: string[] | null
+          plate?: string | null
+          purchase_price?: number
+          reconditioning_cost?: number | null
+          sale_date?: string | null
+          status?: Database["public"]["Enums"]["vehicle_status"] | null
+          suggested_price?: number | null
+          transmission?: string | null
+          updated_at?: string
+          year_fab?: number
+          year_model?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +284,16 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      lead_source:
+        | "olx"
+        | "facebook"
+        | "whatsapp"
+        | "loja"
+        | "instagram"
+        | "indicacao"
+        | "outro"
+      lead_status: "novo" | "contactado" | "negociando" | "fechado" | "perdido"
+      vehicle_status: "em_estoque" | "vendido" | "reservado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +420,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      lead_source: [
+        "olx",
+        "facebook",
+        "whatsapp",
+        "loja",
+        "instagram",
+        "indicacao",
+        "outro",
+      ],
+      lead_status: ["novo", "contactado", "negociando", "fechado", "perdido"],
+      vehicle_status: ["em_estoque", "vendido", "reservado"],
+    },
   },
 } as const
