@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -10,15 +10,22 @@ import {
   Zap,
   Menu,
   X,
+  Settings,
+  Megaphone,
+  TrendingUp,
+  Bell,
+  ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const links = [
   { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
-  { to: "/estoque", icon: Car, label: "Estoque" },
+  { to: "/estoque", icon: Car, label: "Inventory" },
   { to: "/leads", icon: Users, label: "Leads" },
-  { to: "/vendas", icon: DollarSign, label: "Vendas" },
+  { to: "/vendas", icon: DollarSign, label: "Sales" },
+  { to: "/analytics", icon: TrendingUp, label: "Analytics", disabled: true },
+  { to: "/ads", icon: Megaphone, label: "Ads Automation", disabled: true },
+  { to: "/settings", icon: Settings, label: "Settings", disabled: true },
 ];
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
@@ -32,73 +39,112 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-background">
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-background/80 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 border-r border-border bg-card flex flex-col transition-transform lg:translate-x-0 ${
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-[240px] bg-[hsl(220,28%,6%)] flex flex-col transition-transform lg:translate-x-0 border-r border-border/50 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="p-4 flex items-center gap-2 border-b border-border">
-          <div className="w-8 h-8 rounded-lg bg-gradient-profit flex items-center justify-center">
+        {/* Logo */}
+        <div className="h-16 px-5 flex items-center gap-2.5 border-b border-border/30">
+          <div className="w-8 h-8 rounded-xl bg-gradient-profit flex items-center justify-center shadow-glow-sm">
             <Zap className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-display text-lg font-bold">DealPulse</span>
-          <button className="lg:hidden ml-auto" onClick={() => setSidebarOpen(false)}>
-            <X className="w-5 h-5" />
+          <span className="font-display text-lg font-bold tracking-tight">DealPulse</span>
+          <button className="lg:hidden ml-auto p-1" onClick={() => setSidebarOpen(false)}>
+            <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {links.map((link) => (
             <NavLink
               key={link.to}
-              to={link.to}
-              onClick={() => setSidebarOpen(false)}
+              to={link.disabled ? "#" : link.to}
+              onClick={(e) => {
+                if (link.disabled) e.preventDefault();
+                else setSidebarOpen(false);
+              }}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                `group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${
+                  link.disabled
+                    ? "text-muted-foreground/40 cursor-not-allowed"
+                    : isActive
+                    ? "bg-primary/10 text-primary shadow-glow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                 }`
               }
             >
-              <link.icon className="w-4 h-4" />
-              {link.label}
+              {({ isActive }) => (
+                <>
+                  {isActive && !link.disabled && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary shadow-glow-sm" />
+                  )}
+                  <link.icon className={`w-[18px] h-[18px] transition-colors ${isActive && !link.disabled ? "text-primary" : ""}`} />
+                  <span>{link.label}</span>
+                  {link.disabled && (
+                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground/50">Soon</span>
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-bold">
+        {/* User */}
+        <div className="p-3 border-t border-border/30">
+          <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer">
+            <div className="w-8 h-8 rounded-full bg-gradient-profit flex items-center justify-center text-xs font-bold text-primary-foreground shadow-glow-sm">
               {profile?.full_name?.[0]?.toUpperCase() || "U"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{profile?.full_name || "Usuário"}</p>
-              <p className="text-xs text-muted-foreground capitalize">{profile?.role || "vendedor"}</p>
+              <p className="text-[13px] font-medium truncate">{profile?.full_name || "Usuário"}</p>
+              <p className="text-[11px] text-muted-foreground capitalize">{profile?.role || "vendedor"}</p>
             </div>
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
-          <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={handleSignOut}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-muted-foreground/60 hover:text-destructive mt-1 text-xs h-8"
+            onClick={handleSignOut}
+          >
+            <LogOut className="w-3.5 h-3.5 mr-2" />
+            Sign out
           </Button>
         </div>
       </aside>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b border-border flex items-center px-4 lg:hidden">
-          <button onClick={() => setSidebarOpen(true)}>
-            <Menu className="w-5 h-5" />
-          </button>
-          <span className="font-display text-lg font-bold ml-3">DealPulse</span>
+        {/* Top bar */}
+        <header className="h-16 border-b border-border/30 flex items-center justify-between px-4 md:px-6 glass-strong">
+          <div className="flex items-center gap-3">
+            <button className="lg:hidden p-1.5 rounded-lg hover:bg-secondary" onClick={() => setSidebarOpen(true)}>
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="hidden lg:block">
+              <h2 className="font-display text-sm font-semibold">Dealership Management</h2>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="relative p-2 rounded-xl hover:bg-secondary/50 transition-colors">
+              <Bell className="w-[18px] h-[18px] text-muted-foreground" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary shadow-glow-sm" />
+            </button>
+            <div className="w-8 h-8 rounded-full bg-gradient-profit flex items-center justify-center text-xs font-bold text-primary-foreground shadow-glow-sm">
+              {profile?.full_name?.[0]?.toUpperCase() || "U"}
+            </div>
+          </div>
         </header>
+
         <main className="flex-1 p-4 md:p-6 overflow-auto">
           {children}
         </main>
