@@ -20,12 +20,12 @@ import { Button } from "@/components/ui/button";
 
 const links = [
   { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
-  { to: "/estoque", icon: Car, label: "Inventory" },
+  { to: "/estoque", icon: Car, label: "Estoque" },
   { to: "/leads", icon: Users, label: "Leads" },
-  { to: "/vendas", icon: DollarSign, label: "Sales" },
-  { to: "/analytics", icon: TrendingUp, label: "Analytics", disabled: true },
-  { to: "/ads", icon: Megaphone, label: "Ads Automation", disabled: true },
-  { to: "/settings", icon: Settings, label: "Settings", disabled: true },
+  { to: "/vendas", icon: DollarSign, label: "Vendas" },
+  { to: "/analytics", icon: TrendingUp, label: "Análises", disabled: true },
+  { to: "/ads", icon: Megaphone, label: "Automação de Anúncios", disabled: true },
+  { to: "/settings", icon: Settings, label: "Configurações", disabled: true },
 ];
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
@@ -40,18 +40,15 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-50 w-[240px] bg-[hsl(220,28%,6%)] flex flex-col transition-transform lg:translate-x-0 border-r border-border/50 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Logo */}
         <div className="h-16 px-5 flex items-center gap-2.5 border-b border-border/30">
           <div className="w-8 h-8 rounded-xl bg-gradient-profit flex items-center justify-center shadow-glow-sm">
             <Zap className="w-4 h-4 text-primary-foreground" />
@@ -62,7 +59,6 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {links.map((link) => (
             <NavLink
@@ -90,7 +86,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
                   <link.icon className={`w-[18px] h-[18px] transition-colors ${isActive && !link.disabled ? "text-primary" : ""}`} />
                   <span>{link.label}</span>
                   {link.disabled && (
-                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground/50">Soon</span>
+                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground/50">Em breve</span>
                   )}
                 </>
               )}
@@ -98,7 +94,6 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           ))}
         </nav>
 
-        {/* User */}
         <div className="p-3 border-t border-border/30">
           <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer">
             <div className="w-8 h-8 rounded-full bg-gradient-profit flex items-center justify-center text-xs font-bold text-primary-foreground shadow-glow-sm">
@@ -117,21 +112,19 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             onClick={handleSignOut}
           >
             <LogOut className="w-3.5 h-3.5 mr-2" />
-            Sign out
+            Sair
           </Button>
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
         <header className="h-16 border-b border-border/30 flex items-center justify-between px-4 md:px-6 glass-strong">
           <div className="flex items-center gap-3">
             <button className="lg:hidden p-1.5 rounded-lg hover:bg-secondary" onClick={() => setSidebarOpen(true)}>
               <Menu className="w-5 h-5" />
             </button>
             <div className="hidden lg:block">
-              <h2 className="font-display text-sm font-semibold">Dealership Management</h2>
+              <h2 className="font-display text-sm font-semibold">Gestão da Loja</h2>
             </div>
           </div>
           <div className="flex items-center gap-3">

@@ -32,7 +32,6 @@ import car6 from "@/assets/cars/car6.jpg";
 
 const demoCarImages = [car1, car2, car3, car4, car5, car6];
 
-// Demo chart data
 const chartData = [
   { month: "Jan", revenue: 145000, profit: 32000 },
   { month: "Fev", revenue: 168000, profit: 38000 },
@@ -158,20 +157,20 @@ const Dashboard = () => {
 
   return (
     <div className="flex gap-6">
-      {/* Main content */}
+      {/* Conteúdo principal */}
       <div className="flex-1 space-y-6 min-w-0">
-        {/* Header */}
+        {/* Cabeçalho */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight">Dealership Performance</h1>
-            <p className="text-[13px] text-muted-foreground mt-0.5">Real-time overview of your operation</p>
+            <h1 className="font-display text-2xl font-bold tracking-tight">Desempenho da Loja</h1>
+            <p className="text-[13px] text-muted-foreground mt-0.5">Visão geral em tempo real da sua operação</p>
           </div>
           <div className="flex items-center gap-2">
             <select className="bg-secondary/50 border border-border rounded-xl px-3 py-2 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50">
-              <option>Last 30 days</option>
-              <option>Last 7 days</option>
-              <option>Last 90 days</option>
-              <option>This year</option>
+              <option>Últimos 30 dias</option>
+              <option>Últimos 7 dias</option>
+              <option>Últimos 90 dias</option>
+              <option>Este ano</option>
             </select>
           </div>
         </div>
@@ -180,53 +179,53 @@ const Dashboard = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
             icon={DollarSign}
-            label="Total Profit"
+            label="Lucro Total"
             value={stats.totalProfit > 0 ? fmt(stats.totalProfit) : "R$0"}
-            change="+12.5%"
+            change="+12,5%"
             positive
-            sublabel="vs. last month"
+            sublabel="vs. mês passado"
           />
           <KPICard
             icon={Car}
-            label="Active Listings"
+            label="Anúncios Ativos"
             value={String(stats.inStock)}
-            change={`${stats.agingVehicles.filter(v => v.status === "dead").length} stale`}
+            change={`${stats.agingVehicles.filter(v => v.status === "dead").length} parados`}
             positive={stats.agingVehicles.filter(v => v.status === "dead").length === 0}
-            sublabel="Across all channels"
+            sublabel="Em todos os canais"
           />
           <KPICard
             icon={Users}
-            label="Leads Today"
+            label="Leads Hoje"
             value={String(stats.newLeads)}
             change="+3"
             positive
-            sublabel="New inquiries"
+            sublabel="Novas consultas"
           />
           <KPICard
             icon={Target}
-            label="Conversion Rate"
+            label="Taxa de Conversão"
             value={`${stats.conversionRate}%`}
-            change="+2.1%"
+            change="+2,1%"
             positive
-            sublabel="Lead to sale"
+            sublabel="Lead para venda"
           />
         </div>
 
-        {/* Revenue Chart */}
+        {/* Gráfico de Receita */}
         <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="font-display text-lg font-semibold">Revenue & Profit</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Monthly performance overview</p>
+              <h2 className="font-display text-lg font-semibold">Faturamento e Lucro</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Desempenho mensal</p>
             </div>
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-primary/60" />
-                <span className="text-muted-foreground">Revenue</span>
+                <span className="text-muted-foreground">Faturamento</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-primary" />
-                <span className="text-muted-foreground">Profit</span>
+                <span className="text-muted-foreground">Lucro</span>
               </div>
             </div>
           </div>
@@ -275,7 +274,7 @@ const Dashboard = () => {
                 stroke="hsl(142 71% 45% / 0.4)"
                 strokeWidth={2}
                 fill="url(#revenueGradient)"
-                name="Revenue"
+                name="Faturamento"
               />
               <Area
                 type="monotone"
@@ -283,21 +282,21 @@ const Dashboard = () => {
                 stroke="hsl(142 71% 45%)"
                 strokeWidth={2.5}
                 fill="url(#profitGradient)"
-                name="Profit"
+                name="Lucro"
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Inventory Preview */}
+        {/* Preview do Estoque */}
         <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="font-display text-lg font-semibold">Inventory</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">{stats.inStock} vehicles in stock</p>
+              <h2 className="font-display text-lg font-semibold">Estoque</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{stats.inStock} veículos em estoque</p>
             </div>
             <a href="/estoque" className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
-              View all <ArrowUpRight className="w-3 h-3" />
+              Ver todos <ArrowUpRight className="w-3 h-3" />
             </a>
           </div>
 
@@ -335,13 +334,13 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Right Side Panel */}
+      {/* Painel Lateral Direito */}
       <div className="hidden xl:block w-[280px] shrink-0 space-y-4">
-        {/* Profit Summary */}
+        {/* Resumo de Lucro */}
         <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
           <h3 className="font-display text-sm font-semibold mb-4 flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-primary" />
-            Profit Summary
+            Resumo de Lucro
           </h3>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
@@ -349,59 +348,59 @@ const Dashboard = () => {
                 <p className="text-xl font-display font-bold text-primary">
                   {stats.totalSales || 127}
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Revenue</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Faturamento</p>
                 <p className="text-xs font-semibold text-primary">{fmtK(stats.totalRevenue || 1225940)}</p>
               </div>
               <div className="rounded-xl bg-primary/10 glow-border p-3 text-center">
                 <p className="text-xl font-display font-bold text-primary">
                   {stats.totalSales || 2210}
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Total Sales</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Total Vendas</p>
                 <p className="text-xs font-semibold text-primary">{fmtK(stats.totalProfit || 739498)}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* KPI Breakdown */}
+        {/* KPIs Detalhados */}
         <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
           <h3 className="font-display text-sm font-semibold mb-4 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-primary" />
-            KPI Breakdown
+            KPIs Detalhados
           </h3>
           <div className="space-y-3">
             <KPIRow
-              label="Avg. days to sell"
-              value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "47.3"}
+              label="Dias médios p/ vender"
+              value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "47,3"}
               icon={Clock}
             />
             <KPIRow
-              label="Cost per acquisition"
-              value={stats.totalSales > 0 ? fmtK(stats.totalRevenue / stats.totalSales) : "R$48.8k"}
+              label="Custo por aquisição"
+              value={stats.totalSales > 0 ? fmtK(stats.totalRevenue / stats.totalSales) : "R$48,8k"}
               icon={DollarSign}
             />
             <KPIRow
-              label="Profit per car"
-              value={stats.totalSales > 0 ? fmtK(stats.totalProfit / stats.totalSales) : "R$39.5k"}
+              label="Lucro por carro"
+              value={stats.totalSales > 0 ? fmtK(stats.totalProfit / stats.totalSales) : "R$39,5k"}
               icon={TrendingUp}
             />
             <KPIRow
-              label="Conversion rate"
+              label="Taxa de conversão"
               value={`${stats.conversionRate || 38.6}%`}
               icon={Target}
             />
           </div>
         </div>
 
-        {/* Alerts */}
+        {/* Alertas */}
         {stats.agingVehicles.filter(v => v.status === "dead").length > 0 && (
           <div className="rounded-2xl bg-destructive/5 border border-destructive/20 p-5">
             <h3 className="font-display text-sm font-semibold mb-3 flex items-center gap-2 text-destructive">
               <AlertTriangle className="w-4 h-4" />
-              Dead Stock Alert
+              Alerta de Estoque Parado
             </h3>
             <p className="text-xs text-muted-foreground">
-              {stats.agingVehicles.filter(v => v.status === "dead").length} vehicles are losing you money. Consider reducing prices.
+              {stats.agingVehicles.filter(v => v.status === "dead").length} veículos estão te fazendo perder dinheiro. Considere reduzir os preços.
             </p>
           </div>
         )}
@@ -410,7 +409,7 @@ const Dashboard = () => {
   );
 };
 
-// ---- Sub-components ----
+// ---- Sub-componentes ----
 
 const KPICard = ({
   icon: Icon,
@@ -463,7 +462,7 @@ const InventoryCard = ({
 }) => {
   const glowClass = status === "dead" ? "glow-border-destructive" : status === "slow" ? "glow-border-accent" : "glow-border";
   const dotClass = status === "dead" ? "neon-dot-red" : status === "slow" ? "neon-dot-amber" : "neon-dot";
-  const statusLabel = status === "dead" ? "Dead stock" : status === "slow" ? "Slow" : "Hot";
+  const statusLabel = status === "dead" ? "Parado" : status === "slow" ? "Lento" : "Quente";
 
   return (
     <div className={`rounded-xl bg-gradient-card border border-border/30 overflow-hidden hover:border-border transition-all duration-300 ${glowClass}`}>
