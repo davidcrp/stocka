@@ -16,7 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Search, Car, Calendar, DollarSign, TrendingUp, Zap, AlertTriangle, Pencil, Trash2, Upload, Tag } from "lucide-react";
+import { Plus, Search, Car, Calendar, DollarSign, TrendingUp, Zap, AlertTriangle, Pencil, Trash2, Upload, Tag, ArrowDown, ArrowUp, Megaphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInDays } from "date-fns";
 
@@ -24,8 +24,9 @@ type Vehicle = {
   id: string; brand: string; model: string; year_fab: number; year_model: number;
   plate: string | null; color: string | null; mileage: number | null;
   fuel: string | null; transmission: string | null; purchase_price: number;
-  reconditioning_cost: number | null; listing_price: number | null;
-  suggested_price: number | null; status: "em_estoque" | "vendido" | "reservado";
+  reconditioning_cost: number | null; transport_cost: number | null;
+  listing_price: number | null; suggested_price: number | null;
+  status: "em_estoque" | "vendido" | "reservado";
   entry_date: string; notes: string | null; photos: string[] | null;
 };
 
@@ -39,12 +40,13 @@ const statusLabels: Record<string, string> = {
 const emptyForm = {
   brand: "", model: "", year_fab: new Date().getFullYear(), year_model: new Date().getFullYear(),
   plate: "", color: "", mileage: 0, fuel: "flex", transmission: "manual",
-  purchase_price: 0, reconditioning_cost: 0, listing_price: 0, desired_margin: 20, notes: "",
+  purchase_price: 0, reconditioning_cost: 0, transport_cost: 0, listing_price: 0, desired_margin: 20, notes: "",
 };
 
 const Estoque = () => {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("days_desc");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formStep, setFormStep] = useState(1);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -71,19 +73,20 @@ const Estoque = () => {
     queryClient.invalidateQueries({ queryKey: ["vendas-data"] });
   };
 
-  const totalCost = form.purchase_price + form.reconditioning_cost;
+  const totalCost = form.purchase_price + form.reconditioning_cost + form.transport_cost;
   const suggestedPrice = totalCost > 0 ? Math.round(totalCost * (1 + form.desired_margin / 100)) : 0;
   const expectedProfit = (form.listing_price || suggestedPrice) - totalCost;
 
   const openEdit = (v: Vehicle) => {
     setEditingId(v.id);
-    const cost = v.purchase_price + (v.reconditioning_cost || 0);
+    const cost = v.purchase_price + (v.reconditioning_cost || 0) + (v.transport_cost || 0);
     const margin = cost > 0 && v.listing_price ? Math.round(((v.listing_price - cost) / cost) * 100) : 20;
     setForm({
       brand: v.brand, model: v.model, year_fab: v.year_fab, year_model: v.year_model,
       plate: v.plate || "", color: v.color || "", mileage: v.mileage || 0,
       fuel: v.fuel || "flex", transmission: v.transmission || "manual",
       purchase_price: v.purchase_price, reconditioning_cost: v.reconditioning_cost || 0,
+      transport_cost: v.transport_cost || 0,
       listing_price: v.listing_price || 0, desired_margin: margin, notes: v.notes || "",
     });
     setFormStep(1);
@@ -104,7 +107,7 @@ const Estoque = () => {
       brand: form.brand, model: form.model, year_fab: form.year_fab, year_model: form.year_model,
       plate: form.plate || null, color: form.color || null, mileage: form.mileage,
       fuel: form.fuel, transmission: form.transmission, purchase_price: form.purchase_price,
-      reconditioning_cost: form.reconditioning_cost,
+      reconditioning_cost: form.reconditioning_cost, transport_cost: form.transport_cost,
       listing_price: form.listing_price || suggestedPrice, suggested_price: suggestedPrice,
       notes: form.notes || null,
     };
@@ -139,20 +142,14 @@ const Estoque = () => {
   const handleQuickSell = async (v: Vehicle) => {
     const salePrice = v.listing_price || v.purchase_price;
     const { error } = await supabase.from("sales").insert({
-      vehicle_id: v.id,
-      seller_id: user?.id || null,
-      final_price: salePrice,
-      commission: 0,
-      payment_method: "dinheiro",
+      vehicle_id: v.id, seller_id: user?.id || null, final_price: salePrice, commission: 0, payment_method: "dinheiro",
     });
     if (error) {
       toast({ title: "Erro ao registrar venda", description: error.message, variant: "destructive" });
       return;
     }
     await supabase.from("vehicles").update({
-      status: "vendido" as const,
-      sale_date: new Date().toISOString().split("T")[0],
-      final_sale_price: salePrice,
+      status: "vendido" as const, sale_date: new Date().toISOString().split("T")[0], final_sale_price: salePrice,
     }).eq("id", v.id);
     toast({ title: `${v.brand} ${v.model} vendido! 🎉` });
     invalidateAll();
@@ -180,18 +177,55 @@ const Estoque = () => {
     setUploadingPhotos(false);
   };
 
-  const filtered = vehicles.filter((v) => {
+  // Enriched vehicle data
+  const enriched = vehicles.map((v) => {
+    const days = differenceInDays(new Date(), new Date(v.entry_date));
+    const cost = v.purchase_price + (v.reconditioning_cost || 0) + (v.transport_cost || 0);
+    const profit = (v.listing_price || 0) - cost;
+    const margin = (v.listing_price || 0) > 0 ? (profit / (v.listing_price || 1)) * 100 : 0;
+    const agingStatus: "green" | "yellow" | "red" = days < 15 ? "green" : days < 30 ? "yellow" : "red";
+
+    let suggestion = "";
+    let suggestionIcon: "up" | "down" | "promo" | null = null;
+    if (v.status === "em_estoque") {
+      if (days >= 30 && margin > 15) { suggestion = "Reduza o preço agora"; suggestionIcon = "down"; }
+      else if (days >= 30 && margin <= 15) { suggestion = "Promova urgentemente"; suggestionIcon = "promo"; }
+      else if (days >= 15 && margin > 25) { suggestion = "Considere reduzir preço"; suggestionIcon = "down"; }
+      else if (days < 15 && margin > 20) { suggestion = "Pode aumentar preço"; suggestionIcon = "up"; }
+    }
+
+    return { ...v, days, cost, profit, margin, agingStatus, suggestion, suggestionIcon };
+  });
+
+  const filtered = enriched.filter((v) => {
     const matchSearch = `${v.brand} ${v.model} ${v.plate || ""}`.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "all" || v.status === filterStatus;
     return matchSearch && matchStatus;
   });
 
+  // Sort
+  const sorted = [...filtered].sort((a, b) => {
+    switch (sortBy) {
+      case "days_desc": return b.days - a.days;
+      case "days_asc": return a.days - b.days;
+      case "profit_desc": return b.profit - a.profit;
+      case "profit_asc": return a.profit - b.profit;
+      case "risk": {
+        const riskOrder = { red: 0, yellow: 1, green: 2 };
+        return (riskOrder[a.agingStatus] || 2) - (riskOrder[b.agingStatus] || 2);
+      }
+      default: return 0;
+    }
+  });
+
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-  const inStockCount = vehicles.filter((v) => v.status === "em_estoque").length;
-  const deadCount = vehicles.filter((v) => v.status === "em_estoque" && differenceInDays(new Date(), new Date(v.entry_date)) > 60).length;
-  const totalInvested = vehicles.filter((v) => v.status === "em_estoque").reduce((s, v) => s + v.purchase_price + (v.reconditioning_cost || 0), 0);
+  const inStockVehicles = enriched.filter((v) => v.status === "em_estoque");
+  const inStockCount = inStockVehicles.length;
+  const totalInvested = inStockVehicles.reduce((s, v) => s + v.cost, 0);
+  const totalProfitPotential = inStockVehicles.reduce((s, v) => s + v.profit, 0);
+  const redCount = inStockVehicles.filter((v) => v.agingStatus === "red").length;
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
@@ -199,8 +233,8 @@ const Estoque = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">Estoque</h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} veículos</p>
+          <h1 className="font-display text-2xl font-bold">Estoque & Lucro</h1>
+          <p className="text-sm text-muted-foreground">{inStockCount} veículos • {formatCurrency(totalInvested)} investido • Lucro potencial: {formatCurrency(totalProfitPotential)}</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(v) => { if (!v) resetForm(); else setDialogOpen(v); }}>
           <DialogTrigger asChild>
@@ -219,7 +253,7 @@ const Estoque = () => {
                 <div key={step} className="flex-1">
                   <div className={`h-1.5 rounded-full transition-colors ${formStep >= step ? "bg-primary" : "bg-secondary"}`} />
                   <p className={`text-[10px] mt-1 ${formStep >= step ? "text-primary" : "text-muted-foreground"}`}>
-                    {step === 1 ? "Dados" : step === 2 ? "Valores" : "Lucro"}
+                    {step === 1 ? "Dados" : step === 2 ? "Custos" : "Lucro"}
                   </p>
                 </div>
               ))}
@@ -268,6 +302,14 @@ const Estoque = () => {
                       <Input type="number" value={form.purchase_price} onChange={(e) => setForm({ ...form, purchase_price: +e.target.value })} required className="text-lg font-bold" /></div>
                     <div><label className="text-xs text-muted-foreground mb-1 block">Custo de Recondicionamento (R$)</label>
                       <Input type="number" value={form.reconditioning_cost} onChange={(e) => setForm({ ...form, reconditioning_cost: +e.target.value })} /></div>
+                    <div><label className="text-xs text-muted-foreground mb-1 block">Custo de Transporte (R$)</label>
+                      <Input type="number" value={form.transport_cost} onChange={(e) => setForm({ ...form, transport_cost: +e.target.value })} /></div>
+
+                    <div className="rounded-xl bg-secondary/30 border border-border/50 p-3">
+                      <p className="text-xs text-muted-foreground">Custo Total</p>
+                      <p className="font-display text-lg font-bold">{formatCurrency(totalCost)}</p>
+                    </div>
+
                     <div><label className="text-xs text-muted-foreground mb-1 block">Margem Desejada (%)</label>
                       <div className="flex items-center gap-3">
                         <Input type="number" value={form.desired_margin} onChange={(e) => setForm({ ...form, desired_margin: +e.target.value })} className="w-24" />
@@ -304,13 +346,18 @@ const Estoque = () => {
                       <TrendingUp className="w-4 h-4 text-primary" /> Resumo do Lucro Esperado
                     </h4>
                     <div className="space-y-2">
-                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Custo de aquisição</span><span>{formatCurrency(form.purchase_price)}</span></div>
+                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Compra</span><span>{formatCurrency(form.purchase_price)}</span></div>
                       <div className="flex justify-between text-sm"><span className="text-muted-foreground">Recondicionamento</span><span>{formatCurrency(form.reconditioning_cost)}</span></div>
+                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Transporte</span><span>{formatCurrency(form.transport_cost)}</span></div>
                       <div className="flex justify-between text-sm font-medium border-t border-border/30 pt-2"><span>Custo total</span><span>{formatCurrency(totalCost)}</span></div>
                       <div className="flex justify-between text-sm"><span className="text-muted-foreground">Preço de venda</span><span className="font-semibold">{formatCurrency(form.listing_price || suggestedPrice)}</span></div>
                       <div className="flex justify-between items-center border-t border-border/30 pt-2">
                         <span className="font-semibold">Lucro esperado</span>
                         <span className={`font-display text-xl font-bold ${expectedProfit >= 0 ? "text-primary" : "text-destructive"}`}>{formatCurrency(expectedProfit)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Margem de lucro</span>
+                        <span>{(form.listing_price || suggestedPrice) > 0 ? ((expectedProfit / (form.listing_price || suggestedPrice)) * 100).toFixed(1) : 0}%</span>
                       </div>
                     </div>
                   </div>
@@ -328,8 +375,8 @@ const Estoque = () => {
         </Dialog>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4 bg-gradient-card border-border/50 shadow-card">
           <div className="flex items-center gap-2 mb-1"><Car className="w-4 h-4 text-primary" /><span className="text-xs text-muted-foreground">Em Estoque</span></div>
           <p className="font-display text-xl font-bold">{inStockCount}</p>
@@ -338,14 +385,18 @@ const Estoque = () => {
           <div className="flex items-center gap-2 mb-1"><DollarSign className="w-4 h-4 text-primary" /><span className="text-xs text-muted-foreground">Investido</span></div>
           <p className="font-display text-xl font-bold">{formatCurrency(totalInvested)}</p>
         </Card>
-        <Card className={`p-4 bg-gradient-card border-border/50 shadow-card ${deadCount > 0 ? "border-destructive/20" : ""}`}>
-          <div className="flex items-center gap-2 mb-1"><AlertTriangle className={`w-4 h-4 ${deadCount > 0 ? "text-destructive" : "text-muted-foreground"}`} /><span className="text-xs text-muted-foreground">Parados (60d+)</span></div>
-          <p className={`font-display text-xl font-bold ${deadCount > 0 ? "text-destructive" : ""}`}>{deadCount}</p>
+        <Card className="p-4 bg-gradient-card border-border/50 shadow-card border-primary/20">
+          <div className="flex items-center gap-2 mb-1"><TrendingUp className="w-4 h-4 text-primary" /><span className="text-xs text-muted-foreground">Lucro Potencial</span></div>
+          <p className={`font-display text-xl font-bold ${totalProfitPotential >= 0 ? "text-primary" : "text-destructive"}`}>{formatCurrency(totalProfitPotential)}</p>
+        </Card>
+        <Card className={`p-4 bg-gradient-card border-border/50 shadow-card ${redCount > 0 ? "border-destructive/20" : ""}`}>
+          <div className="flex items-center gap-2 mb-1"><AlertTriangle className={`w-4 h-4 ${redCount > 0 ? "text-destructive" : "text-muted-foreground"}`} /><span className="text-xs text-muted-foreground">Em Risco (30d+)</span></div>
+          <p className={`font-display text-xl font-bold ${redCount > 0 ? "text-destructive" : ""}`}>{redCount}</p>
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-3">
+      {/* Filters & Sort */}
+      <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input className="pl-9" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -359,22 +410,27 @@ const Estoque = () => {
             <SelectItem value="vendido">Vendido</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-48"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="days_desc">Mais tempo parado</SelectItem>
+            <SelectItem value="days_asc">Mais recente</SelectItem>
+            <SelectItem value="profit_desc">Maior lucro</SelectItem>
+            <SelectItem value="profit_asc">Menor lucro</SelectItem>
+            <SelectItem value="risk">Maior risco</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Vehicle Cards */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((v) => {
-          const days = differenceInDays(new Date(), new Date(v.entry_date));
-          const cost = v.purchase_price + (v.reconditioning_cost || 0);
-          const margin = (v.listing_price || 0) - cost;
-          const isDead = days > 60;
-          const isSlow = days > 30;
-          const dailyCost = days > 0 ? Math.round(cost / days) : 0;
+        {sorted.map((v) => {
           const firstPhoto = v.photos && v.photos.length > 0 ? v.photos[0] : null;
+          const SuggIcon = v.suggestionIcon === "up" ? ArrowUp : v.suggestionIcon === "down" ? ArrowDown : v.suggestionIcon === "promo" ? Megaphone : null;
 
           return (
             <Card key={v.id} className={`bg-gradient-card border-border/50 hover:border-border transition-all shadow-card overflow-hidden ${
-              isDead ? "border-destructive/20" : isSlow ? "border-accent/20" : ""
+              v.agingStatus === "red" ? "border-destructive/20" : v.agingStatus === "yellow" ? "border-amber-500/20" : ""
             }`}>
               {firstPhoto && (
                 <div className="aspect-video overflow-hidden">
@@ -390,34 +446,55 @@ const Estoque = () => {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Badge className={statusColors[v.status]}>{statusLabels[v.status]}</Badge>
-                    {isDead && <div className="neon-dot-red" title="Parado há 60+ dias" />}
-                    {isSlow && !isDead && <div className="neon-dot-amber" title="Lento (30+ dias)" />}
+                    <div className={`w-2.5 h-2.5 rounded-full ${
+                      v.agingStatus === "red" ? "bg-destructive animate-pulse" : v.agingStatus === "yellow" ? "bg-amber-500" : "bg-primary"
+                    }`} />
                   </div>
                 </div>
 
+                {/* Cost breakdown */}
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-1.5 text-muted-foreground"><DollarSign className="w-3.5 h-3.5" /><span>Compra: {formatCurrency(v.purchase_price)}</span></div>
+                  <div className="flex items-center gap-1.5 text-muted-foreground"><DollarSign className="w-3.5 h-3.5" /><span>Custo: {formatCurrency(v.cost)}</span></div>
                   <div className="flex items-center gap-1.5 text-muted-foreground"><DollarSign className="w-3.5 h-3.5 text-primary" /><span>Venda: {formatCurrency(v.listing_price || 0)}</span></div>
                   <div className="flex items-center gap-1.5 text-muted-foreground"><Car className="w-3.5 h-3.5" /><span>{(v.mileage || 0).toLocaleString("pt-BR")} km</span></div>
                   <div className="flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5" />
-                    <span className={isDead ? "text-destructive font-semibold" : isSlow ? "text-accent font-semibold" : "text-muted-foreground"}>{days} dias</span>
+                    <span className={v.agingStatus === "red" ? "text-destructive font-semibold" : v.agingStatus === "yellow" ? "text-amber-500 font-semibold" : "text-muted-foreground"}>{v.days} dias</span>
                   </div>
                 </div>
 
-                {v.listing_price && v.purchase_price ? (
-                  <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Margem estimada</span>
-                    <span className={`text-sm font-display font-bold ${margin >= 0 ? "text-primary" : "text-destructive"}`}>
-                      {margin >= 0 ? "+" : ""}{formatCurrency(margin)}
-                    </span>
+                {/* Profit display */}
+                <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs text-muted-foreground">Lucro</span>
+                    <p className={`text-sm font-display font-bold ${v.profit >= 0 ? "text-primary" : "text-destructive"}`}>
+                      {v.profit >= 0 ? "+" : ""}{formatCurrency(v.profit)}
+                    </p>
                   </div>
-                ) : null}
+                  <div className="text-right">
+                    <span className="text-xs text-muted-foreground">Margem</span>
+                    <p className={`text-sm font-display font-bold ${v.margin >= 20 ? "text-primary" : v.margin >= 10 ? "text-amber-500" : "text-destructive"}`}>
+                      {v.margin.toFixed(0)}%
+                    </p>
+                  </div>
+                </div>
 
-                {(isDead || isSlow) && v.status === "em_estoque" && (
+                {/* Decision Suggestion */}
+                {v.suggestion && v.status === "em_estoque" && (
+                  <div className={`mt-2 rounded-lg px-3 py-2 flex items-center gap-2 ${
+                    v.suggestionIcon === "promo" || v.suggestionIcon === "down"
+                      ? "bg-destructive/5 border border-destructive/10"
+                      : "bg-primary/5 border border-primary/10"
+                  }`}>
+                    {SuggIcon && <SuggIcon className={`w-3.5 h-3.5 ${v.suggestionIcon === "up" ? "text-primary" : "text-destructive"}`} />}
+                    <p className="text-[10px] font-medium">{v.suggestion}</p>
+                  </div>
+                )}
+
+                {v.agingStatus === "red" && v.status === "em_estoque" && (
                   <div className="mt-2 rounded-lg bg-destructive/5 border border-destructive/10 px-3 py-2">
                     <p className="text-[10px] text-destructive font-medium">
-                      💸 Custo parado: {formatCurrency(dailyCost)}/dia • {isDead ? "⚠️ Reduza o preço urgente" : "Considere reduzir o preço"}
+                      ⚠️ Este veículo está custando dinheiro diariamente
                     </p>
                   </div>
                 )}
@@ -444,12 +521,12 @@ const Estoque = () => {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Venda rápida</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Registrar venda do {v.brand} {v.model} por {formatCurrency(v.listing_price || v.purchase_price)}? Para personalizar preço e comissão, use a página de Vendas.
+                            Registrar venda do {v.brand} {v.model} por {formatCurrency(v.listing_price || v.purchase_price)}?
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleQuickSell(v)} className="bg-gradient-profit text-primary-foreground">Confirmar Venda</AlertDialogAction>
+                          <AlertDialogAction onClick={() => handleQuickSell(v)} className="bg-gradient-profit text-primary-foreground">Confirmar</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -489,7 +566,7 @@ const Estoque = () => {
         })}
       </div>
 
-      {filtered.length === 0 && (
+      {sorted.length === 0 && (
         <div className="text-center py-16">
           <Car className="w-12 h-12 mx-auto mb-3 opacity-30 text-muted-foreground" />
           <p className="text-muted-foreground mb-4">Nenhum veículo encontrado</p>
