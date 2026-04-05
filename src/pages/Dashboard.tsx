@@ -5,53 +5,40 @@ import { differenceInDays, format, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   TrendingUp, TrendingDown, Car, DollarSign, BarChart3,
-  ArrowUpRight, Clock, Zap, Tag, ChevronRight, Flame, ShieldAlert,
-  Wallet, Timer, Target, ArrowLeftRight, CheckCircle2,
-  Image as ImageIcon, AlertTriangle, Minus, BadgeDollarSign,
-  Activity, CircleDollarSign, Gauge,
+  ChevronRight, ShieldAlert,
+  CheckCircle2, Image as ImageIcon, Minus,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
+/* ─── Types ─── */
 type VehicleAging = {
   id: string; brand: string; model: string; year_fab: number;
   days: number; listing_price: number; total_cost: number;
   profit: number; margin: number; status: "green" | "yellow" | "red";
   suggestion: string; photos: string[] | null;
-  vehicleStatus: string;
-  purchase_price: number;
+  vehicleStatus: string; purchase_price: number;
 };
 
 type Stats = {
-  inStock: number;
-  totalInvested: number;
-  totalInventoryValue: number;
-  totalProfitPotential: number;
-  avgDaysToSell: number;
-  totalSales: number;
-  totalProfit: number;
-  thisMonthProfit: number;
-  thisMonthSales: number;
-  prevMonthProfit: number;
-  prevMonthSales: number;
+  inStock: number; totalInvested: number; totalInventoryValue: number;
+  totalProfitPotential: number; avgDaysToSell: number; totalSales: number;
+  totalProfit: number; thisMonthProfit: number; thisMonthSales: number;
+  prevMonthProfit: number; prevMonthSales: number;
   chartData: { month: string; revenue: number; profit: number }[];
   vehicles: VehicleAging[];
-  greenCount: number;
-  yellowCount: number;
-  redCount: number;
-  tradesCount: number;
-  tradesProfit: number;
-  avgMargin: number;
-  profitPerCar: number;
-  capitalAtRisk: number;
-  highDemandCount: number;
+  greenCount: number; yellowCount: number; redCount: number;
+  tradesCount: number; tradesProfit: number;
+  avgMargin: number; profitPerCar: number;
+  capitalAtRisk: number; highDemandCount: number;
 };
 
+/* ─── Data fetching (unchanged logic) ─── */
 const fetchDashboardStats = async (): Promise<Stats> => {
   const [vehiclesRes, salesRes, expensesRes, tradesRes] = await Promise.all([
     supabase.from("vehicles").select("*"),
@@ -131,7 +118,7 @@ const fetchDashboardStats = async (): Promise<Stats> => {
     if (days >= 30 && margin > 15) suggestion = "Reduza o preço em 10-15%";
     else if (days >= 30 && margin <= 15) suggestion = "Promova urgentemente";
     else if (days >= 15 && days < 30 && margin > 25) suggestion = "Considere reduzir preço";
-    else if (days < 15 && margin > 20) suggestion = "Margem saudável — pode aumentar";
+    else if (days < 15 && margin > 20) suggestion = "Margem saudável";
 
     return {
       id: v.id, brand: v.brand, model: v.model, year_fab: v.year_fab,
@@ -147,44 +134,39 @@ const fetchDashboardStats = async (): Promise<Stats> => {
   const avgMargin = agingVehicles.length > 0
     ? agingVehicles.reduce((s, v) => s + v.margin, 0) / agingVehicles.length : 0;
   const profitPerCar = sales.length > 0 ? totalProfit / sales.length : 0;
-
-  const capitalAtRisk = agingVehicles
-    .filter((v) => v.status === "red")
-    .reduce((s, v) => s + v.total_cost, 0);
-
+  const capitalAtRisk = agingVehicles.filter((v) => v.status === "red").reduce((s, v) => s + v.total_cost, 0);
   const highDemandCount = agingVehicles.filter((v) => v.status === "green" && v.margin >= 20).length;
 
   return {
-    inStock: inStock.length,
-    totalInvested,
-    totalInventoryValue,
-    totalProfitPotential,
-    avgDaysToSell: Math.round(avgDays),
-    totalSales: sales.length,
-    totalProfit,
-    thisMonthProfit,
-    thisMonthSales: thisMonthSalesArr.length,
-    prevMonthProfit,
-    prevMonthSales: prevMonthSalesArr.length,
-    chartData,
-    vehicles: agingVehicles,
+    inStock: inStock.length, totalInvested, totalInventoryValue, totalProfitPotential,
+    avgDaysToSell: Math.round(avgDays), totalSales: sales.length, totalProfit,
+    thisMonthProfit, thisMonthSales: thisMonthSalesArr.length,
+    prevMonthProfit, prevMonthSales: prevMonthSalesArr.length,
+    chartData, vehicles: agingVehicles,
     greenCount: agingVehicles.filter((v) => v.status === "green").length,
     yellowCount: agingVehicles.filter((v) => v.status === "yellow").length,
     redCount: agingVehicles.filter((v) => v.status === "red").length,
-    tradesCount,
-    tradesProfit,
-    avgMargin,
-    profitPerCar,
-    capitalAtRisk,
-    highDemandCount,
+    tradesCount, tradesProfit, avgMargin, profitPerCar, capitalAtRisk, highDemandCount,
   };
 };
 
+/* ─── Formatters ─── */
+const fmt = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+const fmtK = (v: number) => {
+  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
+  return fmt(v);
+};
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════════ */
 const Dashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: stats, isLoading: loading } = useQuery({
+  const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: fetchDashboardStats,
     staleTime: 15_000,
@@ -200,37 +182,45 @@ const Dashboard = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
-      toast({ title: "Veículo marcado como vendido" });
+      toast.success("Veículo marcado como vendido");
     },
   });
 
   const reducePriceMutation = useMutation({
     mutationFn: async ({ id, newPrice }: { id: string; newPrice: number }) => {
-      const { error } = await supabase
-        .from("vehicles")
-        .update({ listing_price: newPrice })
-        .eq("id", id);
+      const { error } = await supabase.from("vehicles").update({ listing_price: newPrice }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
-      toast({ title: "Preço reduzido com sucesso" });
+      toast.success("Preço reduzido com sucesso");
     },
   });
 
-  const fmt = (v: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
-
-  const fmtK = (v: number) => {
-    if (v >= 1000000) return `R$${(v / 1000000).toFixed(1)}M`;
-    if (v >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
-    return fmt(v);
+  const handleReducePrice = (v: VehicleAging) => {
+    const newPrice = Math.round(v.listing_price * 0.9);
+    reducePriceMutation.mutate({ id: v.id, newPrice });
   };
 
-  if (loading || !stats) {
+  /* ─── Loading skeleton ─── */
+  if (isLoading || !stats) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-8 max-w-6xl">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-2xl" />
+          ))}
+        </div>
+        <Skeleton className="h-64 rounded-2xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-72 rounded-2xl" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -244,614 +234,411 @@ const Dashboard = () => {
     : stats.thisMonthProfit > 0 ? 100 : 0;
   const profitPositive = profitChangeNum >= 0;
 
-  const handleReducePrice = (v: VehicleAging) => {
-    const reduction = Math.round(v.listing_price * 0.1);
-    const newPrice = v.listing_price - reduction;
-    reducePriceMutation.mutate({ id: v.id, newPrice });
-  };
-
   return (
-    <div className="space-y-6 lg:space-y-8">
-      {/* ───── CRITICAL ALERTS ───── */}
-      {redVehicles.length > 0 && (
-        <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 p-4 lg:p-5 cursor-pointer hover:bg-destructive/8 transition-all duration-300 group"
-          onClick={() => navigate("/estoque")}
-        >
-          <div className="flex items-start lg:items-center gap-3 lg:gap-4">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-destructive/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <ShieldAlert className="w-5 h-5 lg:w-6 lg:h-6 text-destructive" />
+    <div className="space-y-10 lg:space-y-14 max-w-6xl">
+
+      {/* ══════ SECTION 1 — Profit headline ══════ */}
+      <section>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
+          {format(new Date(), "MMMM yyyy", { locale: ptBR })}
+        </p>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <h1 className="font-display text-[2.5rem] lg:text-6xl font-black tracking-tight leading-none">
+              {fmt(stats.thisMonthProfit)}
+            </h1>
+            <div className="flex items-center gap-2.5 mt-3">
+              <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
+                profitPositive
+                  ? "bg-primary/10 text-primary"
+                  : "bg-destructive/10 text-destructive"
+              }`}>
+                {profitPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                {profitChangeNum >= 0 ? "+" : ""}{profitChangeNum.toFixed(0)}%
+              </span>
+              <span className="text-xs text-muted-foreground">lucro vs mês anterior</span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm lg:text-base font-bold text-destructive">
-                ⚠️ {redVehicles.length} veículo{redVehicles.length > 1 ? "s" : ""} parado{redVehicles.length > 1 ? "s" : ""} há +30 dias
-              </p>
-              <p className="text-xs lg:text-sm text-destructive/70 mt-0.5">
-                {fmt(stats.capitalAtRisk)} em risco
-              </p>
-            </div>
-            <Button size="sm" variant="destructive" className="shrink-0 font-bold hidden sm:flex">
-              Resolver <ChevronRight className="w-4 h-4 ml-1" />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/estoque")} className="text-xs h-9">
+              <Car className="w-3.5 h-3.5 mr-1.5" /> Estoque
+            </Button>
+            <Button size="sm" onClick={() => navigate("/vendas")} className="text-xs h-9">
+              <DollarSign className="w-3.5 h-3.5 mr-1.5" /> Nova Venda
             </Button>
           </div>
         </div>
+      </section>
+
+      {/* ══════ SECTION 2 — Alert banner (only if critical) ══════ */}
+      {redVehicles.length > 0 && (
+        <button
+          onClick={() => navigate("/estoque")}
+          className="w-full text-left flex items-center gap-4 p-4 rounded-2xl bg-destructive/5 border border-destructive/20 hover:border-destructive/40 transition-colors group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
+            <ShieldAlert className="w-5 h-5 text-destructive" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-destructive">
+              {redVehicles.length} veículo{redVehicles.length > 1 ? "s" : ""} parado{redVehicles.length > 1 ? "s" : ""} há +30 dias
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">{fmt(stats.capitalAtRisk)} em capital parado</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-destructive/40 group-hover:text-destructive transition-colors shrink-0" />
+        </button>
       )}
 
-      {/* ───── HEADER ───── */}
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="font-display text-2xl lg:text-3xl font-extrabold tracking-tight">Centro de Controle</h1>
-          <p className="text-xs lg:text-sm text-muted-foreground mt-1">Decisões baseadas em dados</p>
-        </div>
-        <div className="hidden sm:flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate("/estoque")}>
-            <Car className="w-4 h-4 mr-1.5" /> Estoque
+      {/* ══════ SECTION 3 — Key metrics (no cards, just numbers) ══════ */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6 lg:gap-y-0">
+        <MetricBlock label="Em estoque" value={String(stats.inStock)} sub={`${fmtK(stats.totalInvested)} investido`} />
+        <MetricBlock label="Lucro potencial" value={fmtK(stats.totalProfitPotential)} sub={`Margem média ${stats.avgMargin.toFixed(0)}%`} highlight={stats.totalProfitPotential > 0} />
+        <MetricBlock label="Dias p/ vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "—"} sub={stats.avgDaysToSell > 30 ? "Acima do ideal" : "Saudável"} warn={stats.avgDaysToSell > 30} />
+        <MetricBlock label="Lucro / carro" value={fmtK(stats.profitPerCar)} sub={`${stats.totalSales} vendas total`} highlight={stats.profitPerCar > 0} />
+      </section>
+
+      {/* thin separator */}
+      <div className="border-t border-border/40" />
+
+      {/* ══════ SECTION 4 — Inventory health (inline, not cards) ══════ */}
+      <section>
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="font-display text-lg lg:text-xl font-bold">Saúde do estoque</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{stats.inStock} veículos em estoque</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/estoque")} className="text-xs text-muted-foreground hover:text-foreground">
+            Ver todos <ChevronRight className="w-3.5 h-3.5 ml-1" />
           </Button>
-          <Button size="sm" onClick={() => navigate("/vendas")} className="bg-primary text-primary-foreground">
-            <DollarSign className="w-4 h-4 mr-1.5" /> Nova Venda
-          </Button>
         </div>
-      </div>
 
-      {/* ───── HERO PROFIT + SECONDARY KPIs ───── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5">
-        {/* Hero Profit Card */}
-        <Card className="lg:col-span-5 p-5 lg:p-7 bg-gradient-to-br from-primary/12 via-primary/5 to-transparent border-primary/25 relative overflow-hidden">
-          <div className="absolute -top-16 -right-16 w-48 h-48 bg-primary/8 rounded-full blur-3xl" />
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
-                <CircleDollarSign className="w-4 h-4 text-primary" />
-              </div>
-              <span className="text-xs font-bold text-primary uppercase tracking-widest">Lucro Mensal</span>
+        {stats.inStock > 0 ? (
+          <>
+            {/* Segmented bar */}
+            <div className="flex rounded-full overflow-hidden h-2.5 mb-6">
+              {stats.greenCount > 0 && (
+                <div className="bg-primary transition-all" style={{ width: `${(stats.greenCount / stats.inStock) * 100}%` }} />
+              )}
+              {stats.yellowCount > 0 && (
+                <div className="bg-amber-500 transition-all" style={{ width: `${(stats.yellowCount / stats.inStock) * 100}%` }} />
+              )}
+              {stats.redCount > 0 && (
+                <div className="bg-destructive transition-all" style={{ width: `${(stats.redCount / stats.inStock) * 100}%` }} />
+              )}
             </div>
-            <p className="font-display text-4xl lg:text-5xl font-black tracking-tighter mt-3">
-              {fmt(stats.thisMonthProfit)}
-            </p>
-            <div className="flex items-center gap-3 mt-3">
-              <div className={`flex items-center gap-1 text-sm font-bold px-3 py-1 rounded-full ${
-                profitPositive ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"
-              }`}>
-                {profitPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                {profitChangeNum >= 0 ? "+" : ""}{profitChangeNum.toFixed(1)}%
-              </div>
-              <span className="text-xs lg:text-sm text-muted-foreground">vs mês anterior</span>
+
+            {/* Legend row */}
+            <div className="flex gap-6 text-xs">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-primary" />
+                <span className="text-muted-foreground">{stats.greenCount} saudável</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="text-muted-foreground">{stats.yellowCount} atenção</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-destructive" />
+                <span className="text-muted-foreground">{stats.redCount} crítico</span>
+              </span>
             </div>
-            <div className="mt-5 pt-4 border-t border-primary/15 grid grid-cols-3 gap-3">
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Vendas</p>
-                <p className="font-display text-xl lg:text-2xl font-black mt-1">{stats.thisMonthSales}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Lucro/Carro</p>
-                <p className="font-display text-xl lg:text-2xl font-black text-primary mt-1">{fmtK(stats.profitPerCar)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Trocas</p>
-                <p className="font-display text-xl lg:text-2xl font-black mt-1">{stats.tradesCount}</p>
-              </div>
-            </div>
-          </div>
-        </Card>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground py-6">Nenhum veículo em estoque</p>
+        )}
+      </section>
 
-        {/* KPI Grid */}
-        <div className="lg:col-span-7 grid grid-cols-2 gap-3 lg:gap-4">
-          <KPICard
-            icon={Wallet} label="Capital Investido" value={fmtK(stats.totalInvested)}
-            sublabel={`${stats.inStock} veículo${stats.inStock !== 1 ? "s" : ""}`}
-            detail={`Médio: ${stats.inStock > 0 ? fmtK(stats.totalInvested / stats.inStock) : "—"}`}
-          />
-          <KPICard
-            icon={Target} label="Lucro Potencial" value={fmtK(stats.totalProfitPotential)}
-            sublabel={`Estoque: ${fmtK(stats.totalInventoryValue)}`}
-            highlight={stats.totalProfitPotential > 0}
-            detail={`Margem: ${stats.avgMargin.toFixed(0)}%`}
-          />
-          <KPICard
-            icon={Timer} label="Dias p/ Vender"
-            value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}d` : "—"}
-            sublabel={stats.avgDaysToSell > 30 ? "⚠️ Acima do ideal" : "✅ Saudável"}
-            warning={stats.avgDaysToSell > 30}
-            detail={stats.capitalAtRisk > 0 ? `${fmtK(stats.capitalAtRisk)} em risco` : "Sem risco"}
-          />
-          <KPICard
-            icon={Activity} label="Performance"
-            value={stats.avgMargin > 0 ? `${stats.avgMargin.toFixed(0)}%` : "—"}
-            sublabel={stats.avgMargin >= 20 ? "Excelente" : stats.avgMargin >= 10 ? "Moderada" : "Baixa"}
-            warning={stats.avgMargin > 0 && stats.avgMargin < 10}
-            highlight={stats.avgMargin >= 20}
-            detail={`${stats.totalSales} vendas`}
-          />
-        </div>
-      </div>
-
-      {/* ───── INVENTORY HEALTH + QUICK ACTIONS ───── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-5">
-        <Card className="lg:col-span-3 p-5 lg:p-6 border-border/50">
-          <div className="flex items-center justify-between mb-4 lg:mb-5">
-            <h2 className="font-display text-sm lg:text-base font-bold flex items-center gap-2">
-              <Gauge className="w-4 h-4 lg:w-5 lg:h-5 text-primary" /> Saúde do Estoque
-            </h2>
-            <span className="text-xs text-muted-foreground">{stats.inStock} veículo{stats.inStock !== 1 ? "s" : ""}</span>
-          </div>
-          {stats.inStock > 0 ? (
-            <div className="space-y-4 lg:space-y-5">
-              <div className="flex rounded-2xl overflow-hidden h-8 lg:h-10 shadow-inner">
-                {stats.greenCount > 0 && (
-                  <div className="bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground transition-all duration-500"
-                    style={{ width: `${Math.max((stats.greenCount / stats.inStock) * 100, 8)}%` }}>
-                    {stats.greenCount}
-                  </div>
-                )}
-                {stats.yellowCount > 0 && (
-                  <div className="bg-amber-500 flex items-center justify-center text-xs font-bold text-white transition-all duration-500"
-                    style={{ width: `${Math.max((stats.yellowCount / stats.inStock) * 100, 8)}%` }}>
-                    {stats.yellowCount}
-                  </div>
-                )}
-                {stats.redCount > 0 && (
-                  <div className="bg-destructive flex items-center justify-center text-xs font-bold text-white transition-all duration-500"
-                    style={{ width: `${Math.max((stats.redCount / stats.inStock) * 100, 8)}%` }}>
-                    {stats.redCount}
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-3 gap-3 lg:gap-4">
-                <HealthStat
-                  color="bg-primary" label="Saudável" subtitle="< 15d"
-                  count={stats.greenCount} icon={<CheckCircle2 className="w-4 h-4 text-primary" />}
-                />
-                <HealthStat
-                  color="bg-amber-500" label="Atenção" subtitle="15-30d"
-                  count={stats.yellowCount} icon={<AlertTriangle className="w-4 h-4 text-amber-500" />}
-                />
-                <HealthStat
-                  color="bg-destructive" label="Crítico" subtitle="30d+"
-                  count={stats.redCount} icon={<Flame className="w-4 h-4 text-destructive" />}
-                />
-              </div>
-            </div>
-          ) : (
-            <EmptyState icon={Car} text="Nenhum veículo em estoque" />
-          )}
-        </Card>
-
-        {/* Quick Actions - hidden on mobile (bottom nav replaces it) */}
-        <Card className="lg:col-span-2 p-5 lg:p-6 border-border/50 hidden lg:block">
-          <h2 className="font-display text-base font-bold mb-5 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-primary" /> Ações Rápidas
-          </h2>
-          <div className="grid grid-cols-1 gap-3">
-            <QuickAction icon={Car} label="Adicionar Veículo" desc="Novo ao estoque" onClick={() => navigate("/estoque")} />
-            <QuickAction icon={DollarSign} label="Registrar Venda" desc="Fechar negócio" onClick={() => navigate("/vendas")} />
-            <QuickAction icon={ArrowLeftRight} label="Registrar Troca" desc="Entrada + saída" onClick={() => navigate("/trocas")} />
-            {(redVehicles.length + yellowVehicles.length) > 0 && (
-              <QuickAction icon={Tag} label="Reduzir Preços" desc={`${redVehicles.length + yellowVehicles.length} veículos`} onClick={() => navigate("/estoque")} alert />
-            )}
-          </div>
-        </Card>
-      </div>
-
-      {/* ───── VEHICLES NEEDING ACTION ───── */}
+      {/* ══════ SECTION 5 — Vehicles needing action ══════ */}
       {(redVehicles.length > 0 || yellowVehicles.length > 0) && (
-        <div>
-          <div className="flex items-center justify-between mb-4 lg:mb-5">
-            <div>
-              <h2 className="font-display text-lg lg:text-xl font-extrabold tracking-tight">🚨 Precisam de Ação</h2>
-              <p className="text-xs lg:text-sm text-muted-foreground mt-1">Aja agora para proteger seu lucro</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => navigate("/estoque")} className="hidden sm:flex">
-              Ver todos <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
+        <section>
+          <h2 className="font-display text-lg lg:text-xl font-bold mb-1">Precisam de ação</h2>
+          <p className="text-xs text-muted-foreground mb-6">Proteja seu lucro — resolva estes primeiro</p>
+
+          <div className="space-y-3">
             {[...redVehicles, ...yellowVehicles].slice(0, 6).map((v) => (
-              <VehicleActionCard
-                key={v.id} vehicle={v} fmt={fmt} navigate={navigate}
+              <VehicleRow
+                key={v.id}
+                vehicle={v}
+                onNavigate={() => navigate(`/estoque/${v.id}`)}
                 onMarkSold={() => markSoldMutation.mutate(v.id)}
                 onReducePrice={() => handleReducePrice(v)}
+                isSelling={markSoldMutation.isPending}
+                isReducing={reducePriceMutation.isPending}
               />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* ───── HIGH DEMAND VEHICLES ───── */}
+      {/* ══════ SECTION 6 — High demand (horizontal scroll on mobile) ══════ */}
       {greenVehicles.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4 lg:mb-5">
-            <div>
-              <h2 className="font-display text-lg lg:text-xl font-extrabold tracking-tight">🟢 Alta Demanda</h2>
-              <p className="text-xs lg:text-sm text-muted-foreground mt-1">Giro rápido e boa margem</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 lg:gap-4">
+        <section>
+          <h2 className="font-display text-lg lg:text-xl font-bold mb-1">Alta demanda</h2>
+          <p className="text-xs text-muted-foreground mb-6">Giro rápido — considere aumentar preço</p>
+
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:grid lg:grid-cols-4 snap-x">
             {greenVehicles.slice(0, 4).map((v) => (
-              <Card key={v.id}
-                className="p-3 lg:p-4 border-primary/15 hover:border-primary/30 cursor-pointer transition-all duration-300 hover:shadow-lg group"
-                onClick={() => navigate(`/estoque/${v.id}`)}
-              >
-                {v.photos && v.photos.length > 0 ? (
-                  <div className="aspect-[16/10] rounded-xl overflow-hidden mb-3">
-                    <img src={v.photos[0]} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-                  </div>
-                ) : (
-                  <div className="aspect-[16/10] rounded-xl bg-secondary/30 flex items-center justify-center mb-3">
-                    <ImageIcon className="w-8 h-8 text-muted-foreground/20" />
-                  </div>
-                )}
-                <p className="font-display font-bold text-sm">{v.brand} {v.model} <span className="text-muted-foreground font-normal">{v.year_fab}</span></p>
-                <div className="flex items-center justify-between mt-2">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Lucro</p>
-                    <p className="font-display text-base lg:text-lg font-black text-primary">+{fmt(v.profit)}</p>
-                  </div>
-                  <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">{v.days}d • {v.margin.toFixed(0)}%</Badge>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ───── CHART + INSIGHTS SIDEBAR ───── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-5">
-        <Card className="xl:col-span-2 p-4 lg:p-6 border-border/50">
-          <div className="flex items-center justify-between mb-4 lg:mb-5">
-            <div>
-              <h2 className="font-display text-base lg:text-lg font-bold">Faturamento e Lucro</h2>
-              <p className="text-[10px] lg:text-xs text-muted-foreground mt-1">Últimos 12 meses</p>
-            </div>
-            <div className="hidden sm:flex items-center gap-5 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-primary/30" />
-                <span className="text-muted-foreground">Faturamento</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-primary" />
-                <span className="text-muted-foreground">Lucro</span>
-              </div>
-            </div>
-          </div>
-          {stats.chartData.some((d) => d.revenue > 0) ? (
-            <ChartContent chartData={stats.chartData} fmt={fmt} />
-          ) : (
-            <EmptyState icon={BarChart3} text="Registre vendas para ver o gráfico" />
-          )}
-        </Card>
-
-        {/* Right Sidebar */}
-        <div className="space-y-5">
-          {/* Financial Summary */}
-          <Card className="p-6 border-border/50">
-            <h3 className="font-display text-base font-bold mb-4 flex items-center gap-2">
-              <BadgeDollarSign className="w-5 h-5 text-primary" /> Resumo Financeiro
-            </h3>
-            <div className="space-y-1">
-              <FinanceRow label="Capital investido" value={fmtK(stats.totalInvested)} />
-              <FinanceRow label="Valor do estoque" value={fmtK(stats.totalInventoryValue)} positive={stats.totalInventoryValue > stats.totalInvested} />
-              <FinanceRow label="Lucro potencial" value={fmtK(stats.totalProfitPotential)} positive={stats.totalProfitPotential > 0} bold />
-              <FinanceRow label="Lucro realizado" value={fmtK(stats.totalProfit)} positive={stats.totalProfit > 0} bold />
-              <FinanceRow label="Lucro/carro" value={fmtK(stats.profitPerCar)} positive={stats.profitPerCar > 0} />
-              <FinanceRow label="Trocas" value={`${stats.tradesCount}`} />
-              <FinanceRow label="Lucro em trocas" value={fmtK(stats.tradesProfit)} positive={stats.tradesProfit > 0} />
-              {stats.capitalAtRisk > 0 && (
-                <FinanceRow label="Capital em risco" value={fmtK(stats.capitalAtRisk)} negative />
-              )}
-            </div>
-          </Card>
-
-          {/* Smart Insights */}
-          <Card className="p-6 border-border/50">
-            <h3 className="font-display text-base font-bold mb-4 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-primary" /> Decisões Inteligentes
-            </h3>
-            <div className="space-y-3">
-              {redVehicles.length > 0 && (
-                <InsightCard
-                  icon={Flame}
-                  text={`${redVehicles.length} veículo${redVehicles.length > 1 ? "s" : ""} parado${redVehicles.length > 1 ? "s" : ""} — reduza preços ou promova nas redes`}
-                  type="warning"
-                  action="Resolver"
-                  onAction={() => navigate("/estoque")}
-                />
-              )}
-              {stats.avgDaysToSell > 30 && (
-                <InsightCard icon={Clock} text="Giro lento — considere campanhas de descontos em lote" type="warning" />
-              )}
-              {stats.totalProfitPotential > 0 && (
-                <InsightCard icon={TrendingUp} text={`${fmtK(stats.totalProfitPotential)} de lucro potencial aguardando no estoque`} type="positive" />
-              )}
-              {stats.avgMargin >= 20 && (
-                <InsightCard icon={CheckCircle2} text="Margem acima de 20% — estratégia de preço saudável" type="positive" />
-              )}
-              {stats.highDemandCount > 0 && (
-                <InsightCard icon={TrendingUp} text={`${stats.highDemandCount} veículo${stats.highDemandCount > 1 ? "s" : ""} com alta demanda — considere aumentar preço`} type="positive" />
-              )}
-              {stats.vehicles.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">Adicione veículos para ver insights</p>
-              )}
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* ───── PRIORITY RANKING ───── */}
-      <Card className="p-6 border-border/50">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="font-display text-lg font-bold">📊 Ranking de Prioridade</h2>
-            <p className="text-xs text-muted-foreground mt-1">Ordenado por urgência — mais antigos primeiro</p>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => navigate("/estoque")}>
-            Ver todos <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
-          </Button>
-        </div>
-        {stats.vehicles.length > 0 ? (
-          <div className="space-y-2.5">
-            {stats.vehicles.slice(0, 8).map((v, i) => (
               <div
                 key={v.id}
-                className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all cursor-pointer hover:shadow-md ${
-                  v.status === "red" ? "bg-destructive/5 border-destructive/20 hover:border-destructive/40" :
-                  v.status === "yellow" ? "bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40" :
-                  "bg-secondary/20 border-border/30 hover:border-primary/20"
-                }`}
                 onClick={() => navigate(`/estoque/${v.id}`)}
+                className="min-w-[240px] lg:min-w-0 snap-start rounded-2xl border border-border/40 hover:border-primary/30 cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden group"
               >
-                <span className={`text-xs font-extrabold w-6 text-center ${
-                  i === 0 ? "text-destructive" : i < 3 ? "text-amber-500" : "text-muted-foreground"
-                }`}>#{i + 1}</span>
-                {v.photos && v.photos.length > 0 ? (
-                  <img src={v.photos[0]} alt="" className="w-11 h-11 rounded-lg object-cover shrink-0" />
+                {v.photos?.[0] ? (
+                  <div className="aspect-[16/10] overflow-hidden">
+                    <img src={v.photos[0]} alt="" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" loading="lazy" />
+                  </div>
                 ) : (
-                  <div className="w-11 h-11 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                    <Car className="w-5 h-5 text-muted-foreground/40" />
+                  <div className="aspect-[16/10] bg-muted/30 flex items-center justify-center">
+                    <ImageIcon className="w-8 h-8 text-muted-foreground/15" />
                   </div>
                 )}
-                <div className={`w-3 h-3 rounded-full shrink-0 ${
-                  v.status === "red" ? "bg-destructive animate-pulse" : v.status === "yellow" ? "bg-amber-500" : "bg-primary"
-                }`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">{v.brand} {v.model} <span className="font-normal text-muted-foreground">{v.year_fab}</span></p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{v.days}d em estoque • Custo: {fmt(v.total_cost)}</p>
+                <div className="p-4">
+                  <p className="text-sm font-semibold">{v.brand} {v.model} <span className="text-muted-foreground font-normal">{v.year_fab}</span></p>
+                  <div className="flex items-baseline justify-between mt-2">
+                    <p className="font-display text-lg font-black text-primary">+{fmt(v.profit)}</p>
+                    <p className="text-[11px] text-muted-foreground">{v.days}d · {v.margin.toFixed(0)}%</p>
+                  </div>
                 </div>
-                <div className="text-right shrink-0 mr-1">
-                  <p className={`text-sm font-extrabold ${v.profit >= 0 ? "text-primary" : "text-destructive"}`}>
-                    {v.profit >= 0 ? "+" : ""}{fmt(v.profit)}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{v.margin.toFixed(0)}% margem</p>
-                </div>
-                <div className="shrink-0 hidden sm:block">
-                  <Badge variant="outline" className={`text-[10px] ${
-                    v.status === "red" ? "border-destructive/30 text-destructive" :
-                    v.status === "yellow" ? "border-amber-500/30 text-amber-600 dark:text-amber-400" :
-                    "border-primary/30 text-primary"
-                  }`}>
-                    {v.suggestion}
-                  </Badge>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/30 shrink-0" />
               </div>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* ══════ SECTION 7 — Revenue chart ══════ */}
+      <section>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-display text-lg lg:text-xl font-bold">Faturamento e lucro</h2>
+          <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary/30" /> Faturamento</span>
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary" /> Lucro</span>
+          </div>
+        </div>
+
+        {stats.chartData.some((d) => d.revenue > 0) ? (
+          <ChartSection chartData={stats.chartData} />
         ) : (
-          <EmptyState icon={Car} text="Adicione veículos ao estoque" />
+          <div className="py-16 text-center">
+            <BarChart3 className="w-10 h-10 text-muted-foreground/15 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Registre vendas para ver o gráfico</p>
+          </div>
         )}
-      </Card>
+      </section>
+
+      {/* ══════ SECTION 8 — Financial breakdown (table-like, not card grid) ══════ */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div>
+          <h2 className="font-display text-lg font-bold mb-4">Resumo financeiro</h2>
+          <div className="space-y-0">
+            <FinRow label="Capital investido" value={fmtK(stats.totalInvested)} />
+            <FinRow label="Valor do estoque" value={fmtK(stats.totalInventoryValue)} positive={stats.totalInventoryValue > stats.totalInvested} />
+            <FinRow label="Lucro potencial" value={fmtK(stats.totalProfitPotential)} positive={stats.totalProfitPotential > 0} bold />
+            <FinRow label="Lucro realizado" value={fmtK(stats.totalProfit)} positive={stats.totalProfit > 0} bold />
+            <FinRow label="Lucro por carro" value={fmtK(stats.profitPerCar)} positive={stats.profitPerCar > 0} />
+            {stats.capitalAtRisk > 0 && <FinRow label="Capital em risco" value={fmtK(stats.capitalAtRisk)} negative />}
+          </div>
+        </div>
+        <div>
+          <h2 className="font-display text-lg font-bold mb-4">Trocas e operações</h2>
+          <div className="space-y-0">
+            <FinRow label="Total de vendas" value={`${stats.totalSales}`} />
+            <FinRow label="Vendas este mês" value={`${stats.thisMonthSales}`} />
+            <FinRow label="Trocas realizadas" value={`${stats.tradesCount}`} />
+            <FinRow label="Lucro em trocas" value={fmtK(stats.tradesProfit)} positive={stats.tradesProfit > 0} />
+            <FinRow label="Margem média" value={`${stats.avgMargin.toFixed(0)}%`} positive={stats.avgMargin >= 15} />
+          </div>
+        </div>
+      </section>
+
+      {/* ══════ SECTION 9 — Priority ranking ══════ */}
+      {stats.vehicles.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-display text-lg lg:text-xl font-bold">Ranking por urgência</h2>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/estoque")} className="text-xs text-muted-foreground">
+              Ver todos <ChevronRight className="w-3.5 h-3.5 ml-1" />
+            </Button>
+          </div>
+          <div className="space-y-1">
+            {stats.vehicles.slice(0, 8).map((v, i) => (
+              <button
+                key={v.id}
+                onClick={() => navigate(`/estoque/${v.id}`)}
+                className="w-full text-left flex items-center gap-3 py-3 px-1 rounded-xl hover:bg-muted/30 transition-colors group"
+              >
+                <span className={`text-xs font-bold w-5 text-center tabular-nums ${
+                  i < 1 ? "text-destructive" : i < 3 ? "text-amber-500" : "text-muted-foreground/50"
+                }`}>{i + 1}</span>
+
+                {v.photos?.[0] ? (
+                  <img src={v.photos[0]} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-muted/40 flex items-center justify-center shrink-0">
+                    <Car className="w-4 h-4 text-muted-foreground/30" />
+                  </div>
+                )}
+
+                <div className={`w-2 h-2 rounded-full shrink-0 ${
+                  v.status === "red" ? "bg-destructive" : v.status === "yellow" ? "bg-amber-500" : "bg-primary"
+                }`} />
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{v.brand} {v.model} <span className="text-muted-foreground font-normal">{v.year_fab}</span></p>
+                  <p className="text-[11px] text-muted-foreground">{v.days}d em estoque</p>
+                </div>
+
+                <div className="text-right shrink-0">
+                  <p className={`text-sm font-bold tabular-nums ${v.profit >= 0 ? "text-primary" : "text-destructive"}`}>
+                    {v.profit >= 0 ? "+" : ""}{fmt(v.profit)}
+                  </p>
+                </div>
+
+                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/20 group-hover:text-muted-foreground transition-colors shrink-0" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 };
 
-/* ─────────── SUB-COMPONENTS ─────────── */
+/* ═══════════════════════════════════════════════════════════
+   SUB-COMPONENTS
+═══════════════════════════════════════════════════════════ */
 
-const VehicleActionCard = ({ vehicle: v, fmt, navigate, onMarkSold, onReducePrice }: {
-  vehicle: VehicleAging; fmt: (v: number) => string; navigate: (path: string) => void;
+/* Metric block — borderless, just numbers */
+const MetricBlock = ({ label, value, sub, highlight, warn }: {
+  label: string; value: string; sub: string; highlight?: boolean; warn?: boolean;
+}) => (
+  <div>
+    <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium mb-1">{label}</p>
+    <p className={`font-display text-2xl lg:text-3xl font-black tracking-tight ${
+      highlight ? "text-primary" : warn ? "text-destructive" : ""
+    }`}>{value}</p>
+    <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>
+  </div>
+);
+
+/* Vehicle row — image-left, info-right, actions visible */
+const VehicleRow = ({ vehicle: v, onNavigate, onMarkSold, onReducePrice, isSelling, isReducing }: {
+  vehicle: VehicleAging; onNavigate: () => void;
   onMarkSold: () => void; onReducePrice: () => void;
+  isSelling: boolean; isReducing: boolean;
 }) => {
-  const firstPhoto = v.photos && v.photos.length > 0 ? v.photos[0] : null;
+  const photo = v.photos?.[0];
   return (
-    <Card
-      className={`overflow-hidden border-2 hover:shadow-xl transition-all duration-300 cursor-pointer group ${
-        v.status === "red" ? "border-destructive/30 hover:border-destructive/50" : "border-amber-500/30 hover:border-amber-500/50"
+    <div
+      className={`flex gap-4 p-3 rounded-2xl border transition-all duration-200 hover:shadow-sm cursor-pointer group ${
+        v.status === "red"
+          ? "border-destructive/15 hover:border-destructive/30"
+          : "border-amber-500/15 hover:border-amber-500/30"
       }`}
-      onClick={() => navigate(`/estoque/${v.id}`)}
+      onClick={onNavigate}
     >
       {/* Image */}
-      {firstPhoto ? (
-        <div className="aspect-[16/9] overflow-hidden relative">
-          <img src={firstPhoto} alt={`${v.brand} ${v.model}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          <div className="absolute top-3 right-3">
-            <Badge className={`text-xs font-bold shadow-lg ${v.status === "red" ? "bg-destructive text-white" : "bg-amber-500 text-white"}`}>
-              {v.days}d parado
-            </Badge>
-          </div>
-          <div className="absolute bottom-3 left-3">
-            <p className="text-white font-display font-bold text-base drop-shadow-lg">{v.brand} {v.model}</p>
-            <p className="text-white/80 text-xs">{v.year_fab}</p>
-          </div>
-        </div>
+      {photo ? (
+        <img src={photo} alt="" className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl object-cover shrink-0" loading="lazy" />
       ) : (
-        <div className="aspect-[16/9] bg-secondary/30 flex items-center justify-center relative">
-          <ImageIcon className="w-10 h-10 text-muted-foreground/20" />
-          <div className="absolute top-3 right-3">
-            <Badge className={`text-xs font-bold ${v.status === "red" ? "bg-destructive text-white" : "bg-amber-500 text-white"}`}>
-              {v.days}d parado
-            </Badge>
-          </div>
+        <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl bg-muted/30 flex items-center justify-center shrink-0">
+          <Car className="w-6 h-6 text-muted-foreground/15" />
         </div>
       )}
-      <div className="p-5">
-        {!firstPhoto && (
-          <div className="mb-3">
-            <h3 className="font-display font-bold">{v.brand} {v.model}</h3>
-            <p className="text-xs text-muted-foreground">{v.year_fab}</p>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold truncate">{v.brand} {v.model} <span className="text-muted-foreground font-normal">{v.year_fab}</span></p>
+            <Badge variant="outline" className={`text-[10px] shrink-0 ${
+              v.status === "red" ? "border-destructive/30 text-destructive" : "border-amber-500/30 text-amber-600 dark:text-amber-400"
+            }`}>{v.days}d</Badge>
           </div>
-        )}
-        {/* Financial grid */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+          <p className="text-[11px] text-muted-foreground mt-0.5">{v.suggestion}</p>
+        </div>
+
+        <div className="flex items-center gap-4 mt-2">
           <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Custo</p>
-            <p className="font-display text-sm font-bold mt-0.5">{fmt(v.total_cost)}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Lucro</p>
-            <p className={`font-display text-sm font-extrabold mt-0.5 ${v.profit >= 0 ? "text-primary" : "text-destructive"}`}>
+            <p className="text-[10px] text-muted-foreground">Lucro</p>
+            <p className={`text-sm font-bold ${v.profit >= 0 ? "text-primary" : "text-destructive"}`}>
               {v.profit >= 0 ? "+" : ""}{fmt(v.profit)}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Margem</p>
-            <p className={`font-display text-sm font-extrabold mt-0.5 ${v.margin >= 20 ? "text-primary" : v.margin >= 10 ? "text-amber-500" : "text-destructive"}`}>
-              {v.margin.toFixed(0)}%
-            </p>
+            <p className="text-[10px] text-muted-foreground">Margem</p>
+            <p className="text-sm font-bold">{v.margin.toFixed(0)}%</p>
+          </div>
+          <div className="ml-auto flex gap-1.5">
+            <Button
+              size="sm" variant="outline"
+              className="text-[11px] h-7 px-2.5"
+              disabled={isReducing}
+              onClick={(e) => { e.stopPropagation(); onReducePrice(); }}
+            >
+              <Minus className="w-3 h-3 mr-1" /> 10%
+            </Button>
+            <Button
+              size="sm"
+              className="text-[11px] h-7 px-2.5"
+              disabled={isSelling}
+              onClick={(e) => { e.stopPropagation(); onMarkSold(); }}
+            >
+              <CheckCircle2 className="w-3 h-3 mr-1" /> Vendido
+            </Button>
           </div>
         </div>
-        {/* Suggestion */}
-        <div className={`rounded-xl px-3.5 py-2.5 text-xs font-semibold mb-4 ${
-          v.status === "red"
-            ? "bg-destructive/8 text-destructive border border-destructive/15"
-            : "bg-amber-500/8 text-amber-600 dark:text-amber-400 border border-amber-500/15"
-        }`}>
-          💡 {v.suggestion}
-        </div>
-        {/* Action buttons */}
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" className="flex-1 text-xs h-9 font-semibold"
-            onClick={(e) => { e.stopPropagation(); onReducePrice(); }}>
-            <Minus className="w-3.5 h-3.5 mr-1" /> -10% Preço
-          </Button>
-          <Button size="sm" className="flex-1 text-xs h-9 font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={(e) => { e.stopPropagation(); onMarkSold(); }}>
-            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Vendido
-          </Button>
-        </div>
       </div>
-    </Card>
+    </div>
   );
 };
 
-const QuickAction = ({ icon: Icon, label, desc, onClick, alert }: {
-  icon: any; label: string; desc: string; onClick: () => void; alert?: boolean;
-}) => (
-  <button
-    onClick={onClick}
-    className={`rounded-xl border p-4 text-left transition-all duration-200 group hover:shadow-md flex items-center gap-3 ${
-      alert
-        ? "border-destructive/20 bg-destructive/5 hover:border-destructive/40"
-        : "border-border/50 hover:border-primary/30 hover:bg-primary/5"
-    }`}
-  >
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-      alert ? "bg-destructive/10" : "bg-primary/8"
-    }`}>
-      <Icon className={`w-5 h-5 ${alert ? "text-destructive" : "text-primary"}`} />
-    </div>
-    <div>
-      <p className="text-sm font-bold">{label}</p>
-      <p className="text-xs text-muted-foreground">{desc}</p>
-    </div>
-  </button>
-);
-
-const ChartContent = ({ chartData, fmt }: { chartData: { month: string; revenue: number; profit: number }[]; fmt: (v: number) => string }) => {
+/* Chart */
+const ChartSection = ({ chartData }: { chartData: { month: string; revenue: number; profit: number }[] }) => {
   const isDark = document.documentElement.classList.contains("dark");
   const gridColor = isDark ? "hsl(220 16% 14%)" : "hsl(220 13% 91%)";
   const tickColor = isDark ? "hsl(220 9% 50%)" : "hsl(220 9% 46%)";
-  const tooltipBg = isDark ? "hsl(220 26% 8%)" : "hsl(0 0% 100%)";
+  const tooltipBg = isDark ? "hsl(220 26% 10%)" : "hsl(0 0% 100%)";
   const tooltipBorder = isDark ? "hsl(220 16% 16%)" : "hsl(220 13% 91%)";
-  const primaryColor = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim();
-  const primary = primaryColor ? `hsl(${primaryColor})` : "hsl(142 71% 45%)";
-  const primaryFaded = primaryColor ? `hsl(${primaryColor} / 0.4)` : "hsl(142 71% 45% / 0.4)";
+  const pv = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim();
+  const primary = pv ? `hsl(${pv})` : "hsl(142 71% 45%)";
+  const primaryFaded = pv ? `hsl(${pv} / 0.35)` : "hsl(142 71% 45% / 0.35)";
 
   return (
-    <ResponsiveContainer width="100%" height={250}>
+    <ResponsiveContainer width="100%" height={260}>
       <AreaChart data={chartData}>
         <defs>
-          <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={primary} stopOpacity={0.12} />
+          <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={primary} stopOpacity={0.08} />
             <stop offset="95%" stopColor={primary} stopOpacity={0} />
           </linearGradient>
-          <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={primary} stopOpacity={0.4} />
-            <stop offset="95%" stopColor={primary} stopOpacity={0.05} />
+          <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={primary} stopOpacity={0.35} />
+            <stop offset="95%" stopColor={primary} stopOpacity={0.02} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
         <XAxis dataKey="month" stroke={tickColor} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} />
-        <YAxis stroke={tickColor} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+        <YAxis stroke={tickColor} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={40} />
         <Tooltip
-          contentStyle={{ background: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: "14px", fontSize: "12px", padding: "12px" }}
+          contentStyle={{ background: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: "12px", fontSize: "12px", padding: "10px 14px" }}
           formatter={(value: number) => [fmt(value), ""]}
         />
-        <Area type="monotone" dataKey="revenue" stroke={primaryFaded} strokeWidth={2} fill="url(#revenueGradient)" name="Faturamento" />
-        <Area type="monotone" dataKey="profit" stroke={primary} strokeWidth={2.5} fill="url(#profitGradient)" name="Lucro" />
+        <Area type="monotone" dataKey="revenue" stroke={primaryFaded} strokeWidth={1.5} fill="url(#revGrad)" name="Faturamento" />
+        <Area type="monotone" dataKey="profit" stroke={primary} strokeWidth={2} fill="url(#profitGrad)" name="Lucro" />
       </AreaChart>
     </ResponsiveContainer>
   );
 };
 
-const HealthStat = ({ color, label, subtitle, count, icon }: { color: string; label: string; subtitle: string; count: number; icon: React.ReactNode }) => (
-  <div className="text-center p-3 rounded-xl bg-secondary/20">
-    <div className="flex items-center justify-center gap-2 mb-1">
-      {icon}
-      <span className="font-display text-2xl font-black">{count}</span>
-    </div>
-    <p className="text-xs font-semibold">{label}</p>
-    <p className="text-[10px] text-muted-foreground">{subtitle}</p>
-  </div>
-);
-
-const InsightCard = ({ icon: Icon, text, type, action, onAction }: {
-  icon: any; text: string; type: "positive" | "warning"; action?: string; onAction?: () => void;
-}) => (
-  <div className={`rounded-xl p-3.5 text-xs leading-relaxed flex items-start gap-2.5 ${
-    type === "positive" ? "bg-primary/5 text-primary/90 border border-primary/10" : "bg-amber-500/5 text-amber-600 dark:text-amber-400 border border-amber-500/10"
-  }`}>
-    <Icon className="w-4 h-4 mt-0.5 shrink-0" />
-    <div className="flex-1">
-      <span>{text}</span>
-      {action && onAction && (
-        <button onClick={onAction} className="block mt-1.5 text-[11px] font-bold underline underline-offset-2 hover:opacity-80 transition-opacity">
-          {action} →
-        </button>
-      )}
-    </div>
-  </div>
-);
-
-const KPICard = ({ icon: Icon, value, sublabel, highlight, warning, detail }: {
-  icon: any; label: string; value: string; sublabel: string; highlight?: boolean; warning?: boolean; detail?: string;
-}) => (
-  <Card className={`p-4 lg:p-5 border transition-all duration-300 hover:shadow-lg group ${
-    highlight ? "border-primary/25 hover:border-primary/40" : warning ? "border-destructive/25 hover:border-destructive/40" : "border-border/50 hover:border-border"
-  }`}>
-    <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center mb-2 lg:mb-3 transition-transform group-hover:scale-105 ${
-      warning ? "bg-destructive/10" : "bg-primary/8"
-    }`}>
-      <Icon className={`w-4 h-4 lg:w-5 lg:h-5 ${warning ? "text-destructive" : "text-primary"}`} />
-    </div>
-    <p className={`font-display text-xl lg:text-2xl font-black tracking-tight ${highlight ? "text-primary" : warning ? "text-destructive" : ""}`}>{value}</p>
-    <p className="text-[10px] lg:text-xs text-muted-foreground mt-1">{sublabel}</p>
-    {detail && <p className="text-[10px] text-muted-foreground/70 mt-0.5 lg:mt-1">{detail}</p>}
-  </Card>
-);
-
-const FinanceRow = ({ label, value, positive, negative, bold }: {
+/* Finance row — clean table-like */
+const FinRow = ({ label, value, positive, negative, bold }: {
   label: string; value: string; positive?: boolean; negative?: boolean; bold?: boolean;
 }) => (
-  <div className="flex items-center justify-between py-2.5 border-b border-border/15 last:border-0">
-    <span className="text-xs text-muted-foreground">{label}</span>
-    <span className={`font-display text-sm ${bold ? "font-extrabold" : "font-bold"} ${
+  <div className="flex items-center justify-between py-3 border-b border-border/20 last:border-0">
+    <span className="text-sm text-muted-foreground">{label}</span>
+    <span className={`font-display text-sm tabular-nums ${bold ? "font-bold" : "font-medium"} ${
       positive ? "text-primary" : negative ? "text-destructive" : ""
     }`}>{value}</span>
-  </div>
-);
-
-const EmptyState = ({ icon: Icon, text }: { icon: any; text: string }) => (
-  <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-    <Icon className="w-10 h-10 mb-2 opacity-20" />
-    <p className="text-sm">{text}</p>
   </div>
 );
 
