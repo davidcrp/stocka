@@ -6,6 +6,7 @@ import {
   BarChart3, Car, DollarSign, LogOut, Zap, Menu, X, Settings, Sun, Moon, ArrowLeftRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import MobileBottomNav from "@/components/MobileBottomNav";
 
 const links = [
   { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
