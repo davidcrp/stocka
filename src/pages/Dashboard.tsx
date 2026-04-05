@@ -434,16 +434,16 @@ const Dashboard = () => {
       {/* ───── VEHICLES NEEDING ACTION ───── */}
       {(redVehicles.length > 0 || yellowVehicles.length > 0) && (
         <div>
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-4 lg:mb-5">
             <div>
-              <h2 className="font-display text-xl font-extrabold tracking-tight">🚨 Precisam de Ação</h2>
-              <p className="text-sm text-muted-foreground mt-1">Estes veículos estão reduzindo seu lucro — aja agora</p>
+              <h2 className="font-display text-lg lg:text-xl font-extrabold tracking-tight">🚨 Precisam de Ação</h2>
+              <p className="text-xs lg:text-sm text-muted-foreground mt-1">Aja agora para proteger seu lucro</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate("/estoque")}>
+            <Button variant="outline" size="sm" onClick={() => navigate("/estoque")} className="hidden sm:flex">
               Ver todos <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
             </Button>
           </div>
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
             {[...redVehicles, ...yellowVehicles].slice(0, 6).map((v) => (
               <VehicleActionCard
                 key={v.id} vehicle={v} fmt={fmt} navigate={navigate}
@@ -458,16 +458,16 @@ const Dashboard = () => {
       {/* ───── HIGH DEMAND VEHICLES ───── */}
       {greenVehicles.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-4 lg:mb-5">
             <div>
-              <h2 className="font-display text-xl font-extrabold tracking-tight">🟢 Alta Demanda</h2>
-              <p className="text-sm text-muted-foreground mt-1">Veículos com boa margem e giro rápido</p>
+              <h2 className="font-display text-lg lg:text-xl font-extrabold tracking-tight">🟢 Alta Demanda</h2>
+              <p className="text-xs lg:text-sm text-muted-foreground mt-1">Giro rápido e boa margem</p>
             </div>
           </div>
-          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 lg:gap-4">
             {greenVehicles.slice(0, 4).map((v) => (
               <Card key={v.id}
-                className="p-4 border-primary/15 hover:border-primary/30 cursor-pointer transition-all duration-300 hover:shadow-lg group"
+                className="p-3 lg:p-4 border-primary/15 hover:border-primary/30 cursor-pointer transition-all duration-300 hover:shadow-lg group"
                 onClick={() => navigate(`/estoque/${v.id}`)}
               >
                 {v.photos && v.photos.length > 0 ? (
@@ -483,7 +483,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between mt-2">
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Lucro</p>
-                    <p className="font-display text-lg font-black text-primary">+{fmt(v.profit)}</p>
+                    <p className="font-display text-base lg:text-lg font-black text-primary">+{fmt(v.profit)}</p>
                   </div>
                   <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">{v.days}d • {v.margin.toFixed(0)}%</Badge>
                 </div>
