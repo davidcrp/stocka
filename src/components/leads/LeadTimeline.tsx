@@ -5,6 +5,8 @@ import { ptBR } from "date-fns/locale";
 const actionIcons: Record<string, typeof MessageCircle> = {
   whatsapp_contact: MessageCircle,
   whatsapp_followup: Send,
+  whatsapp_inbound: MessageCircle,
+  whatsapp_outbound: Send,
   status_change: RefreshCw,
   note: StickyNote,
 };
@@ -12,6 +14,8 @@ const actionIcons: Record<string, typeof MessageCircle> = {
 const actionLabels: Record<string, string> = {
   whatsapp_contact: "Contato via WhatsApp",
   whatsapp_followup: "Follow-up enviado",
+  whatsapp_inbound: "Mensagem recebida (WhatsApp)",
+  whatsapp_outbound: "Mensagem enviada (WhatsApp)",
   status_change: "Status alterado",
   note: "Nota adicionada",
 };
