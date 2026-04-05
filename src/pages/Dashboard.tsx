@@ -4,78 +4,73 @@ import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays, format, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  TrendingUp, TrendingDown, Car, Users, DollarSign, BarChart3,
-  ArrowUpRight, Clock, Target, AlertTriangle, Zap, Phone, Tag,
-  MessageCircleWarning, ChevronRight, Flame, ShieldAlert,
+  TrendingUp, TrendingDown, Car, DollarSign, BarChart3,
+  ArrowUpRight, Clock, AlertTriangle, Zap, Tag,
+  ChevronRight, Flame, ShieldAlert, Wallet, Timer, Target,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar,
 } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Card } from "@/components/ui/card";
+
+type VehicleAging = {
+  id: string; brand: string; model: string; year_fab: number;
+  days: number; listing_price: number; total_cost: number;
+  profit: number; margin: number; status: "green" | "yellow" | "red";
+  suggestion: string;
+};
 
 type Stats = {
   inStock: number;
-  activeLeads: number;
-  totalLeads: number;
-  newLeads: number;
-  pendingLeads: number;
+  totalInvested: number;
+  totalInventoryValue: number;
+  totalProfitPotential: number;
+  avgDaysToSell: number;
   totalSales: number;
-  totalRevenue: number;
   totalProfit: number;
   thisMonthProfit: number;
   thisMonthSales: number;
-  avgDaysToSell: number;
-  conversionRate: number;
-  lostLeadsThisWeek: number;
   prevMonthProfit: number;
   prevMonthSales: number;
-  totalInvested: number;
-  agingVehicles: {
-    id: string; brand: string; model: string; year_fab: number;
-    days: number; listing_price: number; purchase_price: number;
-    reconditioning_cost: number; dailyCost: number; status: string;
-  }[];
-  funnelData: { name: string; value: number }[];
   chartData: { month: string; revenue: number; profit: number }[];
+  vehicles: VehicleAging[];
+  greenCount: number;
+  yellowCount: number;
+  redCount: number;
 };
 
 const fetchDashboardStats = async (): Promise<Stats> => {
-  const [vehiclesRes, leadsRes, salesRes, expensesRes] = await Promise.all([
+  const [vehiclesRes, salesRes, expensesRes] = await Promise.all([
     supabase.from("vehicles").select("*"),
-    supabase.from("leads").select("*"),
-    supabase.from("sales").select("*, vehicles(purchase_price, reconditioning_cost)"),
+    supabase.from("sales").select("*, vehicles(purchase_price, reconditioning_cost, transport_cost)"),
     supabase.from("vehicle_expenses").select("vehicle_id, amount"),
   ]);
 
   const vehicles = vehiclesRes.data || [];
-  const leads = leadsRes.data || [];
   const sales = salesRes.data || [];
   const expenses = expensesRes.data || [];
-
-  const inStock = vehicles.filter((v) => v.status === "em_estoque");
-  const activeLeads = leads.filter((l) => l.status !== "fechado" && l.status !== "perdido");
-  const newLeads = leads.filter((l) => l.status === "novo");
-  const pendingLeads = leads.filter((l) => l.status === "novo" || l.status === "contactado");
-  const totalRevenue = sales.reduce((s, sale) => s + (sale.final_price || 0), 0);
-
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  const lostLeadsThisWeek = leads.filter(
-    (l) => l.status === "perdido" && new Date(l.updated_at) >= oneWeekAgo
-  ).length;
 
   const expensesByVehicle: Record<string, number> = {};
   expenses.forEach((e) => {
     expensesByVehicle[e.vehicle_id] = (expensesByVehicle[e.vehicle_id] || 0) + (e.amount || 0);
   });
 
+  const inStock = vehicles.filter((v) => v.status === "em_estoque");
+
+  const calcTotalCost = (v: any) =>
+    (v.purchase_price || 0) + (v.reconditioning_cost || 0) + (v.transport_cost || 0) + (expensesByVehicle[v.id] || 0);
+
   const calcProfit = (sale: any) => {
     const v = sale.vehicles as any;
-    const cost = (v?.purchase_price || 0) + (v?.reconditioning_cost || 0) + (expensesByVehicle[sale.vehicle_id] || 0);
+    const cost = (v?.purchase_price || 0) + (v?.reconditioning_cost || 0) + (v?.transport_cost || 0) + (expensesByVehicle[sale.vehicle_id] || 0);
     return (sale.final_price || 0) - cost - (sale.commission || 0);
   };
 
+  const totalInvested = inStock.reduce((s, v) => s + calcTotalCost(v), 0);
+  const totalInventoryValue = inStock.reduce((s, v) => s + (v.listing_price || 0), 0);
+  const totalProfitPotential = totalInventoryValue - totalInvested;
   const totalProfit = sales.reduce((s, sale) => s + calcProfit(sale), 0);
 
   const now = new Date();
@@ -91,7 +86,6 @@ const fetchDashboardStats = async (): Promise<Stats> => {
   const thisMonthProfit = thisMonthSalesArr.reduce((s, sale) => s + calcProfit(sale), 0);
   const prevMonthProfit = prevMonthSalesArr.reduce((s, sale) => s + calcProfit(sale), 0);
 
-  // Chart: real monthly data (last 12 months)
   const chartData: { month: string; revenue: number; profit: number }[] = [];
   for (let i = 11; i >= 0; i--) {
     const monthStart = startOfMonth(subMonths(now, i));
@@ -112,43 +106,40 @@ const fetchDashboardStats = async (): Promise<Stats> => {
     ? soldVehicles.reduce((s, v) => s + differenceInDays(new Date(v.sale_date!), new Date(v.entry_date)), 0) / soldVehicles.length
     : 0;
 
-  const closedLeads = leads.filter((l) => l.status === "fechado").length;
-  const negotiatingLeads = leads.filter((l) => l.status === "negociando").length;
-  const contactedLeads = leads.filter((l) => l.status === "contactado").length;
-  const conversionRate = leads.length > 0 ? (closedLeads / leads.length) * 100 : 0;
+  const agingVehicles: VehicleAging[] = inStock.map((v) => {
+    const days = differenceInDays(new Date(), new Date(v.entry_date));
+    const totalCost = calcTotalCost(v);
+    const listingPrice = v.listing_price || 0;
+    const profit = listingPrice - totalCost;
+    const margin = listingPrice > 0 ? (profit / listingPrice) * 100 : 0;
+    const status: "green" | "yellow" | "red" = days < 15 ? "green" : days < 30 ? "yellow" : "red";
 
-  const funnelData = [
-    { name: "Novos", value: newLeads.length },
-    { name: "Contactados", value: contactedLeads },
-    { name: "Negociando", value: negotiatingLeads },
-    { name: "Fechados", value: closedLeads },
-  ];
+    let suggestion = "Manter preço atual";
+    if (days >= 30 && margin > 15) suggestion = "🔻 Reduza o preço agora";
+    else if (days >= 30 && margin <= 15) suggestion = "🚨 Promova urgentemente";
+    else if (days >= 15 && days < 30 && margin > 25) suggestion = "📉 Considere reduzir preço";
+    else if (days < 15 && margin > 20) suggestion = "📈 Pode aumentar preço";
 
-  const totalInvested = inStock.reduce((s, v) => s + (v.purchase_price || 0) + (v.reconditioning_cost || 0) + (expensesByVehicle[v.id] || 0), 0);
-
-  const agingVehicles = inStock
-    .map((v) => {
-      const days = differenceInDays(new Date(), new Date(v.entry_date));
-      const totalVehicleCost = (v.purchase_price || 0) + (v.reconditioning_cost || 0) + (expensesByVehicle[v.id] || 0);
-      return {
-        id: v.id, brand: v.brand, model: v.model, year_fab: v.year_fab,
-        days,
-        listing_price: v.listing_price || 0,
-        purchase_price: v.purchase_price || 0,
-        reconditioning_cost: v.reconditioning_cost || 0,
-        dailyCost: days > 0 ? Math.round(totalVehicleCost / days) : 0,
-        status: days > 60 ? "dead" : days > 30 ? "slow" : "hot",
-      };
-    })
-    .sort((a, b) => b.days - a.days);
+    return { id: v.id, brand: v.brand, model: v.model, year_fab: v.year_fab, days, listing_price: listingPrice, total_cost: totalCost, profit, margin, status, suggestion };
+  }).sort((a, b) => b.days - a.days);
 
   return {
-    inStock: inStock.length, activeLeads: activeLeads.length, totalLeads: leads.length,
-    newLeads: newLeads.length, pendingLeads: pendingLeads.length, totalSales: sales.length,
-    totalRevenue, totalProfit, thisMonthProfit, thisMonthSales: thisMonthSalesArr.length,
-    avgDaysToSell: Math.round(avgDays), conversionRate: Math.round(conversionRate),
-    lostLeadsThisWeek, agingVehicles, funnelData, chartData,
-    prevMonthProfit, prevMonthSales: prevMonthSalesArr.length, totalInvested,
+    inStock: inStock.length,
+    totalInvested,
+    totalInventoryValue,
+    totalProfitPotential,
+    avgDaysToSell: Math.round(avgDays),
+    totalSales: sales.length,
+    totalProfit,
+    thisMonthProfit,
+    thisMonthSales: thisMonthSalesArr.length,
+    prevMonthProfit,
+    prevMonthSales: prevMonthSalesArr.length,
+    chartData,
+    vehicles: agingVehicles,
+    greenCount: agingVehicles.filter((v) => v.status === "green").length,
+    yellowCount: agingVehicles.filter((v) => v.status === "yellow").length,
+    redCount: agingVehicles.filter((v) => v.status === "red").length,
   };
 };
 
@@ -178,11 +169,9 @@ const Dashboard = () => {
     );
   }
 
-  const deadVehicles = stats.agingVehicles.filter((v) => v.status === "dead");
-  const slowVehicles = stats.agingVehicles.filter((v) => v.status === "slow");
-  const hasAlerts = deadVehicles.length > 0 || stats.pendingLeads > 0 || stats.lostLeadsThisWeek > 0;
+  const redVehicles = stats.vehicles.filter((v) => v.status === "red");
+  const yellowVehicles = stats.vehicles.filter((v) => v.status === "yellow");
 
-  // Real month-over-month change (this month vs last month)
   const profitChange = stats.prevMonthProfit > 0
     ? `${((stats.thisMonthProfit - stats.prevMonthProfit) / stats.prevMonthProfit * 100).toFixed(1)}%`
     : stats.thisMonthProfit > 0 ? "+100%" : "0%";
@@ -190,72 +179,94 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Alertas Acionáveis */}
-      {hasAlerts && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {deadVehicles.length > 0 && (
-            <AlertBanner icon={ShieldAlert} color="destructive"
-              title={`${deadVehicles.length} carro${deadVehicles.length > 1 ? "s" : ""} parado${deadVehicles.length > 1 ? "s" : ""} há 60+ dias`}
-              subtitle={`${fmt(deadVehicles.reduce((s, v) => s + v.purchase_price + v.reconditioning_cost, 0))} investidos parados`}
-              onClick={() => navigate("/estoque")}
-            />
-          )}
-          {stats.pendingLeads > 0 && (
-            <AlertBanner icon={MessageCircleWarning} color="accent"
-              title={`${stats.pendingLeads} lead${stats.pendingLeads > 1 ? "s" : ""} aguardando resposta`}
-              subtitle="Leads sem contato perdem interesse rápido"
-              onClick={() => navigate("/leads")}
-            />
-          )}
-          {stats.lostLeadsThisWeek > 0 && (
-            <AlertBanner icon={TrendingDown} color="destructive"
-              title={`${stats.lostLeadsThisWeek} venda${stats.lostLeadsThisWeek > 1 ? "s" : ""} perdida${stats.lostLeadsThisWeek > 1 ? "s" : ""} esta semana`}
-              subtitle="Analise os motivos e ajuste sua estratégia"
-              onClick={() => navigate("/leads")}
-            />
-          )}
+      {/* Critical Alerts */}
+      {redVehicles.length > 0 && (
+        <div className="rounded-xl border p-3.5 bg-destructive/8 border-destructive/20 text-destructive cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => navigate("/estoque")}>
+          <div className="flex items-start gap-2.5">
+            <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold">
+                {redVehicles.length} veículo{redVehicles.length > 1 ? "s" : ""} parado{redVehicles.length > 1 ? "s" : ""} há 30+ dias — custando dinheiro diariamente
+              </p>
+              <p className="text-[10px] opacity-70 mt-0.5">
+                {fmt(redVehicles.reduce((s, v) => s + v.total_cost, 0))} de capital preso
+              </p>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 mt-0.5 shrink-0 opacity-50" />
+          </div>
         </div>
       )}
 
       <div className="flex gap-6">
         <div className="flex-1 space-y-6 min-w-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-display text-2xl font-bold tracking-tight">Centro de Controle</h1>
-              <p className="text-[13px] text-muted-foreground mt-0.5">Dados em tempo real do seu negócio</p>
-            </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold tracking-tight">Centro de Controle</h1>
+            <p className="text-[13px] text-muted-foreground mt-0.5">Gestão de estoque e lucro em tempo real</p>
           </div>
 
           {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KPICard icon={DollarSign} label="Lucro (mês)" value={fmt(stats.thisMonthProfit)}
+            <KPICard icon={Wallet} label="Capital Investido" value={fmtK(stats.totalInvested)}
+              sublabel={`${stats.inStock} veículos em estoque`} />
+            <KPICard icon={DollarSign} label="Valor do Estoque" value={fmtK(stats.totalInventoryValue)}
+              sublabel={`Lucro potencial: ${fmtK(stats.totalProfitPotential)}`} highlight />
+            <KPICard icon={TrendingUp} label="Lucro (mês)" value={fmt(stats.thisMonthProfit)}
               change={profitPositive ? `+${profitChange}` : profitChange} positive={profitPositive}
-              sublabel={`${stats.thisMonthSales} vendas este mês`} highlight
-            />
-            <KPICard icon={Car} label="Em Estoque" value={String(stats.inStock)}
-              change={deadVehicles.length > 0 ? `${deadVehicles.length} parados` : "Saudável"}
-              positive={deadVehicles.length === 0} sublabel={`${fmt(stats.totalInvested)} investido`}
-            />
-            <KPICard icon={Users} label="Leads Ativos" value={String(stats.activeLeads)}
-              change={`${stats.newLeads} novos`} positive={stats.newLeads > 0}
-              sublabel={`${stats.pendingLeads} aguardando`}
-            />
-            <KPICard icon={Target} label="Taxa de Conversão" value={`${stats.conversionRate}%`}
-              change={stats.conversionRate >= 30 ? "Boa" : "Melhorar"} positive={stats.conversionRate >= 30}
-              sublabel="Lead → venda"
-            />
+              sublabel={`${stats.thisMonthSales} vendas`} />
+            <KPICard icon={Timer} label="Dias Médios p/ Vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}d` : "—"}
+              sublabel={stats.avgDaysToSell > 30 ? "⚠️ Acima do ideal" : "Saudável"}
+              warning={stats.avgDaysToSell > 30} />
           </div>
 
-          {/* Ações Rápidas */}
+          {/* Inventory Health Bar */}
+          <Card className="p-5 bg-gradient-card border-border/50 shadow-card">
+            <h2 className="font-display text-sm font-semibold mb-3 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-primary" /> Saúde do Estoque
+            </h2>
+            {stats.inStock > 0 ? (
+              <div className="space-y-3">
+                <div className="flex rounded-full overflow-hidden h-6">
+                  {stats.greenCount > 0 && (
+                    <div className="bg-primary/80 flex items-center justify-center text-[10px] font-bold text-primary-foreground"
+                      style={{ width: `${(stats.greenCount / stats.inStock) * 100}%` }}>
+                      {stats.greenCount}
+                    </div>
+                  )}
+                  {stats.yellowCount > 0 && (
+                    <div className="bg-amber-500/80 flex items-center justify-center text-[10px] font-bold text-white"
+                      style={{ width: `${(stats.yellowCount / stats.inStock) * 100}%` }}>
+                      {stats.yellowCount}
+                    </div>
+                  )}
+                  {stats.redCount > 0 && (
+                    <div className="bg-destructive/80 flex items-center justify-center text-[10px] font-bold text-white"
+                      style={{ width: `${(stats.redCount / stats.inStock) * 100}%` }}>
+                      {stats.redCount}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-4 text-[11px]">
+                  <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-primary" /> &lt;15d ({stats.greenCount})</span>
+                  <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500" /> 15-30d ({stats.yellowCount})</span>
+                  <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-destructive" /> 30d+ ({stats.redCount})</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">Nenhum veículo em estoque</p>
+            )}
+          </Card>
+
+          {/* Quick Actions */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <QuickAction icon={Tag} label="Reduzir Preços" count={deadVehicles.length + slowVehicles.length} color="destructive" onClick={() => navigate("/estoque")} />
-            <QuickAction icon={Phone} label="Contatar Leads" count={stats.pendingLeads} color="accent" onClick={() => navigate("/leads")} />
+            <QuickAction icon={Tag} label="Reduzir Preços" count={redVehicles.length + yellowVehicles.length} color="destructive" onClick={() => navigate("/estoque")} />
             <QuickAction icon={Car} label="Adicionar Veículo" color="primary" onClick={() => navigate("/estoque")} />
             <QuickAction icon={DollarSign} label="Registrar Venda" color="primary" onClick={() => navigate("/vendas")} />
+            <QuickAction icon={Target} label="Ver Ranking" color="accent" onClick={() => navigate("/estoque")} />
           </div>
 
-          {/* Gráfico */}
-          <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
+          {/* Revenue Chart */}
+          <Card className="p-5 bg-gradient-card border-border/50 shadow-card">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="font-display text-lg font-semibold">Faturamento e Lucro</h2>
@@ -304,144 +315,113 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
-          </div>
+          </Card>
 
-          {/* Funil de Vendas */}
-          <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
+          {/* Priority Ranking */}
+          <Card className="p-5 bg-gradient-card border-border/50 shadow-card">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="font-display text-lg font-semibold">Funil de Vendas</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Onde estão seus leads agora</p>
-              </div>
-              <button onClick={() => navigate("/leads")} className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
-                Ver CRM <ArrowUpRight className="w-3 h-3" />
-              </button>
-            </div>
-            {stats.funnelData.some((s) => s.value > 0) ? (
-              <div className="space-y-3">
-                {stats.funnelData.map((stage, i) => {
-                  const maxVal = Math.max(...stats.funnelData.map((s) => s.value), 1);
-                  const colors = ["bg-muted-foreground", "bg-accent", "bg-primary/70", "bg-primary"];
-                  return (
-                    <div key={stage.name} className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground w-24 text-right">{stage.name}</span>
-                      <div className="flex-1">
-                        <Progress value={(stage.value / maxVal) * 100} className={`h-6 bg-secondary/50 [&>div]:${colors[i]}`} />
-                      </div>
-                      <span className="font-display text-sm font-bold w-8">{stage.value}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground text-sm">
-                <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                <p>Adicione leads para ver o funil</p>
-              </div>
-            )}
-          </div>
-
-          {/* Estoque Preview */}
-          <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="font-display text-lg font-semibold">Estoque</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {deadVehicles.length > 0
-                    ? `⚠️ ${deadVehicles.length} veículo${deadVehicles.length > 1 ? "s" : ""} perdendo dinheiro`
-                    : `${stats.inStock} veículos em estoque`}
-                </p>
+                <h2 className="font-display text-lg font-semibold">Ranking de Prioridade</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Quais veículos precisam de ação</p>
               </div>
               <button onClick={() => navigate("/estoque")} className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
                 Ver todos <ArrowUpRight className="w-3 h-3" />
               </button>
             </div>
-
-            {stats.agingVehicles.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {stats.agingVehicles.slice(0, 4).map((v) => (
-                  <InventoryCard key={v.id} vehicle={v} fmt={fmt} />
+            {stats.vehicles.length > 0 ? (
+              <div className="space-y-2">
+                {stats.vehicles.slice(0, 5).map((v, i) => (
+                  <div key={v.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                    v.status === "red" ? "bg-destructive/5 border-destructive/20" :
+                    v.status === "yellow" ? "bg-amber-500/5 border-amber-500/20" :
+                    "bg-secondary/30 border-border/30"
+                  }`}>
+                    <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
+                    <div className={`w-2.5 h-2.5 rounded-full ${
+                      v.status === "red" ? "bg-destructive" : v.status === "yellow" ? "bg-amber-500" : "bg-primary"
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{v.brand} {v.model} {v.year_fab}</p>
+                      <p className="text-[10px] text-muted-foreground">{v.days}d em estoque • Margem: {v.margin.toFixed(0)}%</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-xs font-bold ${v.profit >= 0 ? "text-primary" : "text-destructive"}`}>
+                        {v.profit >= 0 ? "+" : ""}{fmt(v.profit)}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">{v.suggestion}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground text-sm">
                 <Car className="w-8 h-8 mx-auto mb-2 opacity-30" />
                 <p>Adicione veículos ao estoque</p>
-                <Button size="sm" className="mt-3" onClick={() => navigate("/estoque")}>
-                  <Car className="w-4 h-4 mr-2" /> Adicionar Veículo
-                </Button>
               </div>
             )}
-          </div>
+          </Card>
         </div>
 
-        {/* Painel Lateral */}
+        {/* Sidebar */}
         <div className="hidden xl:block w-[280px] shrink-0 space-y-4">
-          <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
+          <Card className="p-5 bg-gradient-card border-border/50 shadow-card">
             <h3 className="font-display text-sm font-semibold mb-4 flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-primary" />
-              Resumo Financeiro
+              <DollarSign className="w-4 h-4 text-primary" /> Resumo Financeiro
             </h3>
             <div className="space-y-3">
-              <FinanceRow label="Faturamento total" value={fmtK(stats.totalRevenue)} positive={stats.totalRevenue > 0} />
-              <FinanceRow label="Lucro total" value={fmtK(stats.totalProfit)} positive={stats.totalProfit > 0} />
               <FinanceRow label="Capital investido" value={fmtK(stats.totalInvested)} />
-              <FinanceRow label="Ticket Médio" value={stats.totalSales > 0 ? fmtK(stats.totalRevenue / stats.totalSales) : "R$0"} />
+              <FinanceRow label="Valor do estoque" value={fmtK(stats.totalInventoryValue)} positive={stats.totalInventoryValue > stats.totalInvested} />
+              <FinanceRow label="Lucro potencial" value={fmtK(stats.totalProfitPotential)} positive={stats.totalProfitPotential > 0} />
+              <FinanceRow label="Lucro realizado" value={fmtK(stats.totalProfit)} positive={stats.totalProfit > 0} />
               <FinanceRow label="Lucro/Carro" value={stats.totalSales > 0 ? fmtK(stats.totalProfit / stats.totalSales) : "R$0"} positive={stats.totalProfit > 0} />
             </div>
-          </div>
+          </Card>
 
-          <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
+          <Card className="p-5 bg-gradient-card border-border/50 shadow-card">
             <h3 className="font-display text-sm font-semibold mb-4 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-primary" />
-              KPIs Operacionais
+              <Clock className="w-4 h-4 text-primary" /> KPIs Operacionais
             </h3>
             <div className="space-y-3">
-              <KPIRow label="Dias médios p/ vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "—"} icon={Clock} warning={stats.avgDaysToSell > 45} />
-              <KPIRow label="Conversão de leads" value={`${stats.conversionRate}%`} icon={Target} warning={stats.conversionRate > 0 && stats.conversionRate < 30} />
-              <KPIRow label="Veículos parados" value={`${deadVehicles.length}`} icon={AlertTriangle} warning={deadVehicles.length > 0} />
-              <KPIRow label="Vendas realizadas" value={`${stats.totalSales}`} icon={DollarSign} />
+              <KPIRow label="Dias médios p/ vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "—"} warning={stats.avgDaysToSell > 30} />
+              <KPIRow label="Veículos em risco" value={`${stats.redCount}`} warning={stats.redCount > 0} />
+              <KPIRow label="Vendas realizadas" value={`${stats.totalSales}`} />
+              <KPIRow label="Margem média" value={stats.vehicles.length > 0 ? `${(stats.vehicles.reduce((s, v) => s + v.margin, 0) / stats.vehicles.length).toFixed(0)}%` : "—"} />
             </div>
-          </div>
+          </Card>
 
-          {/* Dynamic insights based on real data */}
-          {(deadVehicles.length > 0 || stats.pendingLeads > 0 || stats.totalSales > 0) && (
-            <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
+          {/* Smart Insights */}
+          {stats.vehicles.length > 0 && (
+            <Card className="p-5 bg-gradient-card border-border/50 shadow-card">
               <h3 className="font-display text-sm font-semibold mb-3 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-primary" />
-                Insights
+                <Zap className="w-4 h-4 text-primary" /> Decisões Inteligentes
               </h3>
               <div className="space-y-2.5">
-                {deadVehicles.length > 0 && (
-                  <InsightCard
-                    text={`Reduza o preço do ${deadVehicles[0].brand} ${deadVehicles[0].model} — parado há ${deadVehicles[0].days} dias (custo: ${fmt(deadVehicles[0].dailyCost)}/dia)`}
-                    type="warning"
-                  />
+                {redVehicles.length > 0 && (
+                  <InsightCard text={`${redVehicles[0].brand} ${redVehicles[0].model} parado há ${redVehicles[0].days}d — este veículo está custando dinheiro diariamente`} type="warning" />
                 )}
-                {stats.pendingLeads > 0 && (
-                  <InsightCard text={`${stats.pendingLeads} leads aguardando contato — responda rápido para não perder`} type="warning" />
+                {stats.totalProfitPotential > 0 && (
+                  <InsightCard text={`${fmtK(stats.totalProfitPotential)} de lucro potencial no estoque atual`} type="positive" />
                 )}
-                {stats.conversionRate > 0 && stats.conversionRate < 30 && (
-                  <InsightCard text="Taxa de conversão abaixo de 30% — foque em follow-ups mais rápidos" type="warning" />
+                {stats.avgDaysToSell > 30 && (
+                  <InsightCard text="Média de dias para vender acima de 30 — considere revisar preços" type="warning" />
                 )}
-                {stats.totalSales > 0 && stats.totalProfit > 0 && (
-                  <InsightCard text={`Lucro médio de ${fmtK(stats.totalProfit / stats.totalSales)} por veículo vendido`} type="positive" />
+                {stats.greenCount > 0 && stats.greenCount === stats.inStock && (
+                  <InsightCard text="Todos os veículos estão com giro saudável! 🟢" type="positive" />
                 )}
               </div>
-            </div>
+            </Card>
           )}
 
-          {deadVehicles.length > 0 && (
+          {redVehicles.length > 0 && (
             <div className="rounded-2xl bg-destructive/5 border border-destructive/20 p-5">
               <h3 className="font-display text-sm font-semibold mb-2 flex items-center gap-2 text-destructive">
-                <Flame className="w-4 h-4" />
-                Dinheiro Parado
+                <Flame className="w-4 h-4" /> Dinheiro Parado
               </h3>
               <p className="text-xs text-muted-foreground mb-3">
-                {fmt(deadVehicles.reduce((s, v) => s + v.purchase_price + v.reconditioning_cost, 0))} investidos em carros que não vendem.
+                {fmt(redVehicles.reduce((s, v) => s + v.total_cost, 0))} investidos em veículos que não vendem.
               </p>
               <Button size="sm" variant="destructive" className="w-full text-xs" onClick={() => navigate("/estoque")}>
-                Resolver Agora
+                Reduzir Preços Agora
               </Button>
             </div>
           )}
@@ -452,28 +432,6 @@ const Dashboard = () => {
 };
 
 // ---- Sub-components ----
-
-const AlertBanner = ({ icon: Icon, color, title, subtitle, onClick }: {
-  icon: any; color: "destructive" | "accent" | "primary"; title: string; subtitle: string; onClick: () => void;
-}) => {
-  const colorMap = {
-    destructive: "bg-destructive/8 border-destructive/20 text-destructive",
-    accent: "bg-accent/8 border-accent/20 text-accent",
-    primary: "bg-primary/8 border-primary/20 text-primary",
-  };
-  return (
-    <div className={`rounded-xl border p-3.5 ${colorMap[color]} cursor-pointer hover:opacity-90 transition-opacity`} onClick={onClick}>
-      <div className="flex items-start gap-2.5">
-        <Icon className="w-4 h-4 mt-0.5 shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold">{title}</p>
-          <p className="text-[10px] opacity-70 mt-0.5">{subtitle}</p>
-        </div>
-        <ChevronRight className="w-3.5 h-3.5 mt-0.5 shrink-0 opacity-50" />
-      </div>
-    </div>
-  );
-};
 
 const QuickAction = ({ icon: Icon, label, count, color, onClick }: {
   icon: any; label: string; count?: number; color: "primary" | "destructive" | "accent"; onClick: () => void;
@@ -508,61 +466,29 @@ const InsightCard = ({ text, type }: { text: string; type: "positive" | "warning
   </div>
 );
 
-const KPICard = ({ icon: Icon, value, change, positive, sublabel, highlight }: {
-  icon: any; label: string; value: string; change: string; positive: boolean; sublabel: string; highlight?: boolean;
+const KPICard = ({ icon: Icon, value, change, positive, sublabel, highlight, warning }: {
+  icon: any; label: string; value: string; change?: string; positive?: boolean; sublabel: string; highlight?: boolean; warning?: boolean;
 }) => (
-  <div className={`rounded-2xl bg-gradient-card border p-4 shadow-card transition-all duration-300 group ${
-    highlight ? "border-primary/20 shadow-glow-sm" : "border-border/50 hover:border-border"
+  <div className={`rounded-2xl bg-gradient-card border p-4 shadow-card transition-all duration-300 ${
+    highlight ? "border-primary/20 shadow-glow-sm" : warning ? "border-destructive/20" : "border-border/50 hover:border-border"
   }`}>
     <div className="flex items-center justify-between mb-3">
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${highlight ? "bg-primary/12" : "bg-primary/8"}`}>
-        <Icon className="w-[18px] h-[18px] text-primary" />
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${warning ? "bg-destructive/10" : "bg-primary/8"}`}>
+        <Icon className={`w-[18px] h-[18px] ${warning ? "text-destructive" : "text-primary"}`} />
       </div>
-      <div className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-        positive ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
-      }`}>
-        {positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-        {change}
-      </div>
+      {change && (
+        <div className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+          positive ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+        }`}>
+          {positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+          {change}
+        </div>
+      )}
     </div>
-    <p className={`font-display text-2xl font-bold tracking-tight ${highlight ? "text-gradient-profit" : ""}`}>{value}</p>
+    <p className={`font-display text-2xl font-bold tracking-tight ${highlight ? "text-gradient-profit" : warning ? "text-destructive" : ""}`}>{value}</p>
     <p className="text-[11px] text-muted-foreground mt-1">{sublabel}</p>
   </div>
 );
-
-const InventoryCard = ({ vehicle: v, fmt }: { vehicle: any; fmt: (v: number) => string }) => {
-  const profit = v.listing_price - v.purchase_price - v.reconditioning_cost;
-  const glowClass = v.status === "dead" ? "glow-border-destructive" : v.status === "slow" ? "glow-border-accent" : "glow-border";
-  const dotClass = v.status === "dead" ? "neon-dot-red" : v.status === "slow" ? "neon-dot-amber" : "neon-dot";
-  const statusLabel = v.status === "dead" ? "Parado" : v.status === "slow" ? "Lento" : "Quente";
-
-  return (
-    <div className={`rounded-xl bg-gradient-card border border-border/30 overflow-hidden transition-all duration-300 ${glowClass}`}>
-      <div className="p-3">
-        <p className="text-[12px] font-semibold truncate">{v.brand} {v.model}</p>
-        <p className="text-[10px] text-muted-foreground">{v.year_fab}</p>
-        <div className="flex items-center justify-between mt-2">
-          <p className="text-xs font-bold text-primary">{fmt(v.listing_price)}</p>
-          <div className="flex items-center gap-1">
-            <div className={dotClass} />
-            <span className="text-[9px] text-muted-foreground">{v.days}d</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between mt-1.5">
-          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-            v.status === "dead" ? "bg-destructive/10 text-destructive" : v.status === "slow" ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
-          }`}>{statusLabel}</span>
-          <span className={`text-[9px] font-bold ${profit >= 0 ? "text-primary" : "text-destructive"}`}>
-            {profit >= 0 ? "+" : ""}{fmt(profit)}
-          </span>
-        </div>
-        {v.dailyCost > 0 && v.status !== "hot" && (
-          <p className="text-[9px] text-destructive/70 mt-1">💸 {fmt(v.dailyCost)}/dia parado</p>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const FinanceRow = ({ label, value, positive }: { label: string; value: string; positive?: boolean }) => (
   <div className="flex items-center justify-between py-2 border-b border-border/20 last:border-0">
@@ -571,12 +497,9 @@ const FinanceRow = ({ label, value, positive }: { label: string; value: string; 
   </div>
 );
 
-const KPIRow = ({ label, value, icon: Icon, warning }: { label: string; value: string; icon: any; warning?: boolean }) => (
+const KPIRow = ({ label, value, warning }: { label: string; value: string; warning?: boolean }) => (
   <div className="flex items-center justify-between py-2 border-b border-border/20 last:border-0">
-    <div className="flex items-center gap-2">
-      <Icon className={`w-3.5 h-3.5 ${warning ? "text-destructive" : "text-muted-foreground"}`} />
-      <span className="text-xs text-muted-foreground">{label}</span>
-    </div>
+    <span className="text-xs text-muted-foreground">{label}</span>
     <span className={`font-display text-sm font-bold ${warning ? "text-destructive" : ""}`}>{value}</span>
   </div>
 );

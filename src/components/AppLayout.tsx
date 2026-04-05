@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 
 const links = [
   { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
-  { to: "/estoque", icon: Car, label: "Estoque" },
-  { to: "/leads", icon: Users, label: "Leads" },
+  { to: "/estoque", icon: Car, label: "Estoque & Lucro" },
   { to: "/vendas", icon: DollarSign, label: "Vendas" },
+  { to: "/leads", icon: Users, label: "Leads" },
   { to: "/configuracoes", icon: Settings, label: "Configurações" },
 ];
 
