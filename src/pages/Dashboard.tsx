@@ -5,12 +5,11 @@ import { differenceInDays, format, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   TrendingUp, TrendingDown, Car, DollarSign, BarChart3,
-  ArrowUpRight, Clock, AlertTriangle, Zap, Tag,
+  ArrowUpRight, Clock, Zap, Tag,
   ChevronRight, Flame, ShieldAlert, Wallet, Timer, Target,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar,
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
