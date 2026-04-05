@@ -6,8 +6,8 @@ import { ptBR } from "date-fns/locale";
 import {
   TrendingUp, TrendingDown, Car, DollarSign, BarChart3,
   ArrowUpRight, Clock, Zap, Tag, ChevronRight, Flame, ShieldAlert,
-  Wallet, Timer, Target, ArrowLeftRight, AlertTriangle, CheckCircle2,
-  ArrowDown, Megaphone, Image as ImageIcon,
+  Wallet, Timer, Target, ArrowLeftRight, CheckCircle2,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
