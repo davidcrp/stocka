@@ -364,20 +364,18 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* ───── INVENTORY HEALTH BAR + QUICK ACTIONS ───── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        {/* Inventory Health - wider */}
-        <Card className="lg:col-span-3 p-6 border-border/50">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-display text-base font-bold flex items-center gap-2">
-              <Gauge className="w-5 h-5 text-primary" /> Saúde do Estoque
+      {/* ───── INVENTORY HEALTH + QUICK ACTIONS ───── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-5">
+        <Card className="lg:col-span-3 p-5 lg:p-6 border-border/50">
+          <div className="flex items-center justify-between mb-4 lg:mb-5">
+            <h2 className="font-display text-sm lg:text-base font-bold flex items-center gap-2">
+              <Gauge className="w-4 h-4 lg:w-5 lg:h-5 text-primary" /> Saúde do Estoque
             </h2>
             <span className="text-xs text-muted-foreground">{stats.inStock} veículo{stats.inStock !== 1 ? "s" : ""}</span>
           </div>
           {stats.inStock > 0 ? (
-            <div className="space-y-5">
-              {/* Progress bar */}
-              <div className="flex rounded-2xl overflow-hidden h-10 shadow-inner">
+            <div className="space-y-4 lg:space-y-5">
+              <div className="flex rounded-2xl overflow-hidden h-8 lg:h-10 shadow-inner">
                 {stats.greenCount > 0 && (
                   <div className="bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground transition-all duration-500"
                     style={{ width: `${Math.max((stats.greenCount / stats.inStock) * 100, 8)}%` }}>
@@ -397,17 +395,17 @@ const Dashboard = () => {
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-3 lg:gap-4">
                 <HealthStat
-                  color="bg-primary" label="Saudável" subtitle="< 15 dias"
+                  color="bg-primary" label="Saudável" subtitle="< 15d"
                   count={stats.greenCount} icon={<CheckCircle2 className="w-4 h-4 text-primary" />}
                 />
                 <HealthStat
-                  color="bg-amber-500" label="Atenção" subtitle="15-30 dias"
+                  color="bg-amber-500" label="Atenção" subtitle="15-30d"
                   count={stats.yellowCount} icon={<AlertTriangle className="w-4 h-4 text-amber-500" />}
                 />
                 <HealthStat
-                  color="bg-destructive" label="Crítico" subtitle="30+ dias"
+                  color="bg-destructive" label="Crítico" subtitle="30d+"
                   count={stats.redCount} icon={<Flame className="w-4 h-4 text-destructive" />}
                 />
               </div>
@@ -417,8 +415,8 @@ const Dashboard = () => {
           )}
         </Card>
 
-        {/* Quick Actions */}
-        <Card className="lg:col-span-2 p-6 border-border/50">
+        {/* Quick Actions - hidden on mobile (bottom nav replaces it) */}
+        <Card className="lg:col-span-2 p-5 lg:p-6 border-border/50 hidden lg:block">
           <h2 className="font-display text-base font-bold mb-5 flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" /> Ações Rápidas
           </h2>
