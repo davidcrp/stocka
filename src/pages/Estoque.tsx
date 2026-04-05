@@ -431,9 +431,9 @@ const Estoque = () => {
           const SuggIcon = v.suggestionIcon === "up" ? ArrowUp : v.suggestionIcon === "down" ? ArrowDown : v.suggestionIcon === "promo" ? Megaphone : null;
 
           return (
-            <Card key={v.id} className={`bg-gradient-card border-border/50 hover:border-border transition-all shadow-card overflow-hidden ${
-              v.agingStatus === "red" ? "border-destructive/20" : v.agingStatus === "yellow" ? "border-amber-500/20" : ""
-            }`}>
+            <Card key={v.id} className={`bg-gradient-card border hover:shadow-card-lg transition-all duration-300 shadow-card overflow-hidden cursor-pointer group ${
+              v.agingStatus === "red" ? "border-destructive/20" : v.agingStatus === "yellow" ? "border-amber-500/20" : "border-border hover:border-primary/20"
+            }`} onClick={() => navigate(`/estoque/${v.id}`)}>
               {firstPhoto && (
                 <div className="aspect-video overflow-hidden">
                   <img src={firstPhoto} alt={`${v.brand} ${v.model}`} className="w-full h-full object-cover" loading="lazy" />
