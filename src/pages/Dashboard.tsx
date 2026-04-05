@@ -371,6 +371,8 @@ const Dashboard = () => {
               <KPIRow label="Dias médios p/ vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "—"} warning={stats.avgDaysToSell > 30} />
               <KPIRow label="Veículos em risco" value={`${stats.redCount}`} warning={stats.redCount > 0} />
               <KPIRow label="Vendas realizadas" value={`${stats.totalSales}`} />
+              <KPIRow label="Trocas realizadas" value={`${stats.tradesCount}`} />
+              <KPIRow label="Lucro em trocas" value={fmtK(stats.tradesProfit)} />
               <KPIRow label="Margem média" value={stats.vehicles.length > 0 ? `${(stats.vehicles.reduce((s, v) => s + v.margin, 0) / stats.vehicles.length).toFixed(0)}%` : "—"} />
             </div>
           </Card>
