@@ -38,6 +38,8 @@ type Stats = {
   greenCount: number;
   yellowCount: number;
   redCount: number;
+  tradesCount: number;
+  tradesProfit: number;
 };
 
 const fetchDashboardStats = async (): Promise<Stats> => {
@@ -124,6 +126,9 @@ const fetchDashboardStats = async (): Promise<Stats> => {
     return { id: v.id, brand: v.brand, model: v.model, year_fab: v.year_fab, days, listing_price: listingPrice, total_cost: totalCost, profit, margin, status, suggestion };
   }).sort((a, b) => b.days - a.days);
 
+  const tradesCount = trades.length;
+  const tradesProfit = trades.reduce((s: number, t: any) => s + (t.profit || 0), 0);
+
   return {
     inStock: inStock.length,
     totalInvested,
@@ -141,6 +146,8 @@ const fetchDashboardStats = async (): Promise<Stats> => {
     greenCount: agingVehicles.filter((v) => v.status === "green").length,
     yellowCount: agingVehicles.filter((v) => v.status === "yellow").length,
     redCount: agingVehicles.filter((v) => v.status === "red").length,
+    tradesCount,
+    tradesProfit,
   };
 };
 
