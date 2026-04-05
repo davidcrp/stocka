@@ -37,14 +37,7 @@ type Stats = {
   chartData: { month: string; revenue: number; profit: number }[];
 };
 
-const Dashboard = () => {
-  const navigate = useNavigate();
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => { fetchStats(); }, []);
-
-  const fetchStats = async () => {
+const fetchDashboardStats = async (): Promise<Stats> => {
     const [vehiclesRes, leadsRes, salesRes, expensesRes] = await Promise.all([
       supabase.from("vehicles").select("*"),
       supabase.from("leads").select("*"),
