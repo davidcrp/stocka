@@ -43,27 +43,29 @@ const emptyForm = {
 };
 
 const Estoque = () => {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formStep, setFormStep] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { fetchVehicles(); }, []);
+  const { data: vehicles = [], isLoading: loading } = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: async () => {
+      const { data } = await supabase.from("vehicles").select("*").order("created_at", { ascending: false });
+      return (data as Vehicle[]) || [];
+    },
+    staleTime: 30_000,
+  });
 
-  const fetchVehicles = async () => {
-    const { data } = await supabase.from("vehicles").select("*").order("created_at", { ascending: false });
-    setVehicles((data as Vehicle[]) || []);
-    setLoading(false);
-  };
+  const fetchVehicles = () => queryClient.invalidateQueries({ queryKey: ["vehicles"] });
 
   const totalCost = form.purchase_price + form.reconditioning_cost;
   const suggestedPrice = totalCost > 0 ? Math.round(totalCost * (1 + form.desired_margin / 100)) : 0;
