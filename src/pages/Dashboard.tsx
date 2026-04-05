@@ -283,29 +283,7 @@ const Dashboard = () => {
               </div>
             </div>
             {stats.chartData.some((d) => d.revenue > 0) ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={stats.chartData}>
-                  <defs>
-                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0.05} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 16% 14%)" />
-                  <XAxis dataKey="month" stroke="hsl(220 9% 40%)" tick={{ fontSize: 11, fill: "hsl(220 9% 50%)" }} axisLine={false} tickLine={false} />
-                  <YAxis stroke="hsl(220 9% 40%)" tick={{ fontSize: 11, fill: "hsl(220 9% 50%)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip
-                    contentStyle={{ background: "hsl(220 26% 8%)", border: "1px solid hsl(220 16% 16%)", borderRadius: "12px", fontSize: "12px" }}
-                    formatter={(value: number) => [fmt(value), ""]}
-                  />
-                  <Area type="monotone" dataKey="revenue" stroke="hsl(142 71% 45% / 0.4)" strokeWidth={2} fill="url(#revenueGradient)" name="Faturamento" />
-                  <Area type="monotone" dataKey="profit" stroke="hsl(142 71% 45%)" strokeWidth={2.5} fill="url(#profitGradient)" name="Lucro" />
-                </AreaChart>
-              </ResponsiveContainer>
+              <ChartContent chartData={stats.chartData} fmt={fmt} />
             ) : (
               <div className="h-[280px] flex items-center justify-center text-muted-foreground text-sm">
                 <div className="text-center">
@@ -453,6 +431,43 @@ const QuickAction = ({ icon: Icon, label, count, color, onClick }: {
         )}
       </div>
     </button>
+  );
+};
+
+const ChartContent = ({ chartData, fmt }: { chartData: { month: string; revenue: number; profit: number }[]; fmt: (v: number) => string }) => {
+  const isDark = document.documentElement.classList.contains("dark");
+  const gridColor = isDark ? "hsl(220 16% 14%)" : "hsl(220 13% 91%)";
+  const tickColor = isDark ? "hsl(220 9% 50%)" : "hsl(220 9% 46%)";
+  const tooltipBg = isDark ? "hsl(220 26% 8%)" : "hsl(0 0% 100%)";
+  const tooltipBorder = isDark ? "hsl(220 16% 16%)" : "hsl(220 13% 91%)";
+  const primaryColor = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim();
+  const primary = primaryColor ? `hsl(${primaryColor})` : "hsl(142 71% 45%)";
+  const primaryFaded = primaryColor ? `hsl(${primaryColor} / 0.4)` : "hsl(142 71% 45% / 0.4)";
+
+  return (
+    <ResponsiveContainer width="100%" height={280}>
+      <AreaChart data={chartData}>
+        <defs>
+          <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={primary} stopOpacity={0.15} />
+            <stop offset="95%" stopColor={primary} stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={primary} stopOpacity={0.4} />
+            <stop offset="95%" stopColor={primary} stopOpacity={0.05} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+        <XAxis dataKey="month" stroke={tickColor} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} />
+        <YAxis stroke={tickColor} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+        <Tooltip
+          contentStyle={{ background: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: "12px", fontSize: "12px" }}
+          formatter={(value: number) => [fmt(value), ""]}
+        />
+        <Area type="monotone" dataKey="revenue" stroke={primaryFaded} strokeWidth={2} fill="url(#revenueGradient)" name="Faturamento" />
+        <Area type="monotone" dataKey="profit" stroke={primary} strokeWidth={2.5} fill="url(#profitGradient)" name="Lucro" />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 };
 
