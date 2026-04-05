@@ -11,6 +11,7 @@ import Estoque from "@/pages/Estoque";
 import Leads from "@/pages/Leads";
 import Vendas from "@/pages/Vendas";
 import NotFound from "@/pages/NotFound";
+import WebhookSettings from "@/pages/WebhookSettings";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/estoque" element={<Estoque />} />
               <Route path="/leads" element={<Leads />} />
               <Route path="/vendas" element={<Vendas />} />
+              <Route path="/configuracoes" element={<WebhookSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
