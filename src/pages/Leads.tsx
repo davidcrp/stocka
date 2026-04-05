@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,19 @@ const Leads = () => {
     });
     return map;
   }, [allInteractions]);
+
+  // Realtime: auto-refresh when new leads arrive via webhook
+  useEffect(() => {
+    const channel = supabase
+      .channel("leads-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => {
+        invalidateAll();
+        toast.info("📱 Novo lead via WhatsApp!", { duration: 5000 });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["leads"] });
