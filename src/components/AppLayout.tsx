@@ -1,8 +1,9 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
-  BarChart3, Car, DollarSign, LogOut, Users, Zap, Menu, X, Settings,
+  BarChart3, Car, DollarSign, LogOut, Users, Zap, Menu, X, Settings, Sun, Moon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,7 @@ const links = [
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
   const { profile, signOut } = useAuth();
+  const { mode, toggleMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const mainRef = useRef<HTMLElement | null>(null);
@@ -94,6 +96,11 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             <Menu className="w-5 h-5" />
           </button>
           <h2 className="font-display text-sm font-semibold">Gestão da Loja</h2>
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={toggleMode} title={mode === "dark" ? "Modo claro" : "Modo escuro"}>
+              {mode === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </Button>
+          </div>
         </header>
         <main ref={mainRef} className="flex-1 p-4 md:p-6 overflow-auto">
           {children}
