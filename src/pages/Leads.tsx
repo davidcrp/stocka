@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -43,25 +44,27 @@ const sourceLabels: Record<string, string> = {
 const emptyForm = { name: "", phone: "", email: "", source: "outro", notes: "", proposed_value: 0 };
 
 const Leads = () => {
-  const [leads, setLeads] = useState<Lead[]>([]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { fetchLeads(); }, []);
+  const { data: leads = [], isLoading: loading } = useQuery({
+    queryKey: ["leads"],
+    queryFn: async () => {
+      const { data } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
+      return (data as Lead[]) || [];
+    },
+    staleTime: 30_000,
+  });
 
-  const fetchLeads = async () => {
-    const { data } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
-    setLeads((data as Lead[]) || []);
-    setLoading(false);
-  };
+  const fetchLeads = () => queryClient.invalidateQueries({ queryKey: ["leads"] });
 
   const openEdit = (l: Lead) => {
     setEditingId(l.id);

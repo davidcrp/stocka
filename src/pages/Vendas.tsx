@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
@@ -52,14 +53,11 @@ type Vehicle = { id: string; brand: string; model: string; year_fab: number; pur
 type Lead = { id: string; name: string };
 
 const Vendas = () => {
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [form, setForm] = useState({
     vehicle_id: "",
@@ -70,19 +68,28 @@ const Vendas = () => {
     notes: "",
   });
 
-  useEffect(() => { fetchAll(); }, []);
+  const { data: salesData, isLoading: loading } = useQuery({
+    queryKey: ["vendas-data"],
+    queryFn: async () => {
+      const [salesRes, vehiclesRes, leadsRes] = await Promise.all([
+        supabase.from("sales").select("*, vehicles(brand, model, year_fab, purchase_price, reconditioning_cost), leads(name)").order("sale_date", { ascending: false }),
+        supabase.from("vehicles").select("id, brand, model, year_fab, purchase_price, reconditioning_cost, listing_price").eq("status", "em_estoque"),
+        supabase.from("leads").select("id, name"),
+      ]);
+      return {
+        sales: (salesRes.data as any[]) || [],
+        vehicles: (vehiclesRes.data as Vehicle[]) || [],
+        leads: (leadsRes.data as Lead[]) || [],
+      };
+    },
+    staleTime: 30_000,
+  });
 
-  const fetchAll = async () => {
-    const [salesRes, vehiclesRes, leadsRes] = await Promise.all([
-      supabase.from("sales").select("*, vehicles(brand, model, year_fab, purchase_price, reconditioning_cost), leads(name)").order("sale_date", { ascending: false }),
-      supabase.from("vehicles").select("id, brand, model, year_fab, purchase_price, reconditioning_cost, listing_price").eq("status", "em_estoque"),
-      supabase.from("leads").select("id, name"),
-    ]);
-    setSales((salesRes.data as any[]) || []);
-    setVehicles((vehiclesRes.data as Vehicle[]) || []);
-    setLeads((leadsRes.data as Lead[]) || []);
-    setLoading(false);
-  };
+  const sales = salesData?.sales || [];
+  const vehicles = salesData?.vehicles || [];
+  const leads = salesData?.leads || [];
+
+  const fetchAll = () => queryClient.invalidateQueries({ queryKey: ["vendas-data"] });
 
   const selectedVehicle = vehicles.find((v) => v.id === form.vehicle_id);
   const estimatedCost = selectedVehicle
