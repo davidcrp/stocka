@@ -61,6 +61,19 @@ const Leads = () => {
     return map;
   }, [allInteractions]);
 
+  // Realtime: auto-refresh when new leads arrive via webhook
+  useEffect(() => {
+    const channel = supabase
+      .channel("leads-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => {
+        invalidateAll();
+        toast.info("📱 Novo lead via WhatsApp!", { duration: 5000 });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["leads"] });
     queryClient.invalidateQueries({ queryKey: ["lead-interactions"] });
