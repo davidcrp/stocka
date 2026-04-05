@@ -824,17 +824,17 @@ const InsightCard = ({ icon: Icon, text, type, action, onAction }: {
 const KPICard = ({ icon: Icon, value, sublabel, highlight, warning, detail }: {
   icon: any; label: string; value: string; sublabel: string; highlight?: boolean; warning?: boolean; detail?: string;
 }) => (
-  <Card className={`p-5 border transition-all duration-300 hover:shadow-lg group ${
+  <Card className={`p-4 lg:p-5 border transition-all duration-300 hover:shadow-lg group ${
     highlight ? "border-primary/25 hover:border-primary/40" : warning ? "border-destructive/25 hover:border-destructive/40" : "border-border/50 hover:border-border"
   }`}>
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-105 ${
+    <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center mb-2 lg:mb-3 transition-transform group-hover:scale-105 ${
       warning ? "bg-destructive/10" : "bg-primary/8"
     }`}>
-      <Icon className={`w-5 h-5 ${warning ? "text-destructive" : "text-primary"}`} />
+      <Icon className={`w-4 h-4 lg:w-5 lg:h-5 ${warning ? "text-destructive" : "text-primary"}`} />
     </div>
-    <p className={`font-display text-2xl font-black tracking-tight ${highlight ? "text-primary" : warning ? "text-destructive" : ""}`}>{value}</p>
-    <p className="text-xs text-muted-foreground mt-1.5">{sublabel}</p>
-    {detail && <p className="text-[10px] text-muted-foreground/70 mt-1">{detail}</p>}
+    <p className={`font-display text-xl lg:text-2xl font-black tracking-tight ${highlight ? "text-primary" : warning ? "text-destructive" : ""}`}>{value}</p>
+    <p className="text-[10px] lg:text-xs text-muted-foreground mt-1">{sublabel}</p>
+    {detail && <p className="text-[10px] text-muted-foreground/70 mt-0.5 lg:mt-1">{detail}</p>}
   </Card>
 );
 
