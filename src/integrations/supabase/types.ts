@@ -195,6 +195,57 @@ export type Database = {
           },
         ]
       }
+      trades: {
+        Row: {
+          cash_difference: number
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          profit: number
+          trade_value: number
+          vehicle_received_id: string
+          vehicle_sold_id: string
+        }
+        Insert: {
+          cash_difference?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          profit?: number
+          trade_value?: number
+          vehicle_received_id: string
+          vehicle_sold_id: string
+        }
+        Update: {
+          cash_difference?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          profit?: number
+          trade_value?: number
+          vehicle_received_id?: string
+          vehicle_sold_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_vehicle_received_id_fkey"
+            columns: ["vehicle_received_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trades_vehicle_sold_id_fkey"
+            columns: ["vehicle_sold_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_expenses: {
         Row: {
           amount: number

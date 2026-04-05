@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
-  BarChart3, Car, DollarSign, LogOut, Users, Zap, Menu, X, Settings, Sun, Moon,
+  BarChart3, Car, DollarSign, LogOut, Zap, Menu, X, Settings, Sun, Moon, ArrowLeftRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -11,7 +11,7 @@ const links = [
   { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
   { to: "/estoque", icon: Car, label: "Estoque & Lucro" },
   { to: "/vendas", icon: DollarSign, label: "Vendas" },
-  { to: "/leads", icon: Users, label: "Leads" },
+  { to: "/trocas", icon: ArrowLeftRight, label: "Trocas" },
   { to: "/configuracoes", icon: Settings, label: "Configurações" },
 ];
 

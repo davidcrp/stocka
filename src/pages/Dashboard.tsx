@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 import {
   TrendingUp, TrendingDown, Car, DollarSign, BarChart3,
   ArrowUpRight, Clock, Zap, Tag,
-  ChevronRight, Flame, ShieldAlert, Wallet, Timer, Target,
+  ChevronRight, Flame, ShieldAlert, Wallet, Timer, Target, ArrowLeftRight,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -38,18 +38,22 @@ type Stats = {
   greenCount: number;
   yellowCount: number;
   redCount: number;
+  tradesCount: number;
+  tradesProfit: number;
 };
 
 const fetchDashboardStats = async (): Promise<Stats> => {
-  const [vehiclesRes, salesRes, expensesRes] = await Promise.all([
+  const [vehiclesRes, salesRes, expensesRes, tradesRes] = await Promise.all([
     supabase.from("vehicles").select("*"),
     supabase.from("sales").select("*, vehicles(purchase_price, reconditioning_cost, transport_cost)"),
     supabase.from("vehicle_expenses").select("vehicle_id, amount"),
+    supabase.from("trades").select("profit"),
   ]);
 
   const vehicles = vehiclesRes.data || [];
   const sales = salesRes.data || [];
   const expenses = expensesRes.data || [];
+  const trades = tradesRes.data || [];
 
   const expensesByVehicle: Record<string, number> = {};
   expenses.forEach((e) => {
@@ -122,6 +126,9 @@ const fetchDashboardStats = async (): Promise<Stats> => {
     return { id: v.id, brand: v.brand, model: v.model, year_fab: v.year_fab, days, listing_price: listingPrice, total_cost: totalCost, profit, margin, status, suggestion };
   }).sort((a, b) => b.days - a.days);
 
+  const tradesCount = trades.length;
+  const tradesProfit = trades.reduce((s: number, t: any) => s + (t.profit || 0), 0);
+
   return {
     inStock: inStock.length,
     totalInvested,
@@ -139,6 +146,8 @@ const fetchDashboardStats = async (): Promise<Stats> => {
     greenCount: agingVehicles.filter((v) => v.status === "green").length,
     yellowCount: agingVehicles.filter((v) => v.status === "yellow").length,
     redCount: agingVehicles.filter((v) => v.status === "red").length,
+    tradesCount,
+    tradesProfit,
   };
 };
 
@@ -257,11 +266,12 @@ const Dashboard = () => {
           </Card>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <QuickAction icon={Tag} label="Reduzir Preços" count={redVehicles.length + yellowVehicles.length} color="destructive" onClick={() => navigate("/estoque")} />
             <QuickAction icon={Car} label="Adicionar Veículo" color="primary" onClick={() => navigate("/estoque")} />
             <QuickAction icon={DollarSign} label="Registrar Venda" color="primary" onClick={() => navigate("/vendas")} />
-            <QuickAction icon={Target} label="Ver Ranking" color="accent" onClick={() => navigate("/estoque")} />
+            <QuickAction icon={ArrowLeftRight} label="Registrar Troca" color="accent" onClick={() => navigate("/trocas")} />
+            <QuickAction icon={Target} label="Ver Ranking" color="primary" onClick={() => navigate("/estoque")} />
           </div>
 
           {/* Revenue Chart */}
@@ -362,6 +372,8 @@ const Dashboard = () => {
               <KPIRow label="Dias médios p/ vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "—"} warning={stats.avgDaysToSell > 30} />
               <KPIRow label="Veículos em risco" value={`${stats.redCount}`} warning={stats.redCount > 0} />
               <KPIRow label="Vendas realizadas" value={`${stats.totalSales}`} />
+              <KPIRow label="Trocas realizadas" value={`${stats.tradesCount}`} />
+              <KPIRow label="Lucro em trocas" value={fmtK(stats.tradesProfit)} />
               <KPIRow label="Margem média" value={stats.vehicles.length > 0 ? `${(stats.vehicles.reduce((s, v) => s + v.margin, 0) / stats.vehicles.length).toFixed(0)}%` : "—"} />
             </div>
           </Card>
@@ -483,7 +495,7 @@ const InsightCard = ({ text, type }: { text: string; type: "positive" | "warning
 const KPICard = ({ icon: Icon, value, change, positive, sublabel, highlight, warning }: {
   icon: any; label: string; value: string; change?: string; positive?: boolean; sublabel: string; highlight?: boolean; warning?: boolean;
 }) => (
-  <div className={`rounded-2xl bg-gradient-card border p-4 shadow-card transition-all duration-300 ${
+  <div className={`rounded-2xl bg-gradient-card border p-5 shadow-card transition-all duration-300 hover:shadow-card-lg ${
     highlight ? "border-primary/20 shadow-glow-sm" : warning ? "border-destructive/20" : "border-border/50 hover:border-border"
   }`}>
     <div className="flex items-center justify-between mb-3">
@@ -499,8 +511,8 @@ const KPICard = ({ icon: Icon, value, change, positive, sublabel, highlight, war
         </div>
       )}
     </div>
-    <p className={`font-display text-2xl font-bold tracking-tight ${highlight ? "text-gradient-profit" : warning ? "text-destructive" : ""}`}>{value}</p>
-    <p className="text-[11px] text-muted-foreground mt-1">{sublabel}</p>
+    <p className={`font-display text-2xl font-extrabold tracking-tight ${highlight ? "text-gradient-profit" : warning ? "text-destructive" : ""}`}>{value}</p>
+    <p className="text-[11px] text-muted-foreground mt-1.5">{sublabel}</p>
   </div>
 );
 
