@@ -168,8 +168,8 @@ const Dashboard = () => {
     );
   }
 
-  const redVehicles = stats.vehicles.filter((v) => v.status === "red");
-  const yellowVehicles = stats.vehicles.filter((v) => v.status === "yellow");
+  const redVehicles = (stats.vehicles || []).filter((v) => v.status === "red");
+  const yellowVehicles = (stats.vehicles || []).filter((v) => v.status === "yellow");
 
   const profitChange = stats.prevMonthProfit > 0
     ? `${((stats.thisMonthProfit - stats.prevMonthProfit) / stats.prevMonthProfit * 100).toFixed(1)}%`
