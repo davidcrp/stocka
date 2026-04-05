@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -135,15 +135,23 @@ const Dashboard = () => {
       }))
       .sort((a, b) => b.days - a.days);
 
-    setStats({
+    return {
       inStock: inStock.length, totalLeads: leads.length, newLeads: newLeads.length,
       pendingLeads: pendingLeads.length, totalSales: sales.length,
       totalRevenue, totalProfit, avgDaysToSell: Math.round(avgDays),
       conversionRate: Math.round(conversionRate), lostLeadsThisWeek, agingVehicles, funnelData,
       chartData, prevMonthProfit, prevMonthSales: prevMonthSales.length,
-    });
-    setLoading(false);
-  };
+    };
+};
+
+const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const { data: stats, isLoading: loading } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: fetchDashboardStats,
+    staleTime: 30_000,
+  });
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
