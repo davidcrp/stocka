@@ -256,6 +256,7 @@ export type Database = {
           status: Database["public"]["Enums"]["vehicle_status"] | null
           suggested_price: number | null
           transmission: string | null
+          transport_cost: number | null
           updated_at: string
           year_fab: number
           year_model: number
@@ -282,6 +283,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["vehicle_status"] | null
           suggested_price?: number | null
           transmission?: string | null
+          transport_cost?: number | null
           updated_at?: string
           year_fab: number
           year_model: number
@@ -308,6 +310,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["vehicle_status"] | null
           suggested_price?: number | null
           transmission?: string | null
+          transport_cost?: number | null
           updated_at?: string
           year_fab?: number
           year_model?: number
