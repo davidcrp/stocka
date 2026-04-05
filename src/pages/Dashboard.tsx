@@ -8,7 +8,7 @@ import {
   ArrowUpRight, Clock, Zap, Tag, ChevronRight, Flame, ShieldAlert,
   Wallet, Timer, Target, ArrowLeftRight, CheckCircle2,
   Image as ImageIcon, AlertTriangle, Minus, BadgeDollarSign,
-  Package, Activity, CircleDollarSign, Gauge,
+  Activity, CircleDollarSign, Gauge,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
