@@ -281,6 +281,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      change_user_role: {
+        Args: { _new_role: string; _target_user_id: string }
+        Returns: undefined
+      }
       is_manager_or_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
