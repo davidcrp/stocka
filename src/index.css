@@ -168,4 +168,7 @@
     background: hsl(var(--destructive));
     box-shadow: 0 0 6px hsl(var(--destructive) / 0.6);
   }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }

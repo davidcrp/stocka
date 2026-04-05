@@ -251,26 +251,26 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 lg:space-y-8">
       {/* ───── CRITICAL ALERTS ───── */}
       {redVehicles.length > 0 && (
-        <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 p-5 cursor-pointer hover:bg-destructive/8 transition-all duration-300 group"
+        <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 p-4 lg:p-5 cursor-pointer hover:bg-destructive/8 transition-all duration-300 group"
           onClick={() => navigate("/estoque")}
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-destructive/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <ShieldAlert className="w-6 h-6 text-destructive" />
+          <div className="flex items-start lg:items-center gap-3 lg:gap-4">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-destructive/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <ShieldAlert className="w-5 h-5 lg:w-6 lg:h-6 text-destructive" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-base font-bold text-destructive">
-                ⚠️ {redVehicles.length} veículo{redVehicles.length > 1 ? "s" : ""} parado{redVehicles.length > 1 ? "s" : ""} há mais de 30 dias
+              <p className="text-sm lg:text-base font-bold text-destructive">
+                ⚠️ {redVehicles.length} veículo{redVehicles.length > 1 ? "s" : ""} parado{redVehicles.length > 1 ? "s" : ""} há +30 dias
               </p>
-              <p className="text-sm text-destructive/70 mt-1">
-                {fmt(stats.capitalAtRisk)} de capital em risco — cada dia parado reduz sua margem
+              <p className="text-xs lg:text-sm text-destructive/70 mt-0.5">
+                {fmt(stats.capitalAtRisk)} em risco
               </p>
             </div>
-            <Button size="sm" variant="destructive" className="shrink-0 font-bold">
-              Resolver Agora <ChevronRight className="w-4 h-4 ml-1" />
+            <Button size="sm" variant="destructive" className="shrink-0 font-bold hidden sm:flex">
+              Resolver <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
         </div>
@@ -279,10 +279,10 @@ const Dashboard = () => {
       {/* ───── HEADER ───── */}
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">Centro de Controle</h1>
-          <p className="text-sm text-muted-foreground mt-1">Decisões baseadas em dados para maximizar seu lucro</p>
+          <h1 className="font-display text-2xl lg:text-3xl font-extrabold tracking-tight">Centro de Controle</h1>
+          <p className="text-xs lg:text-sm text-muted-foreground mt-1">Decisões baseadas em dados</p>
         </div>
-        <div className="flex gap-2">
+        <div className="hidden sm:flex gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate("/estoque")}>
             <Car className="w-4 h-4 mr-1.5" /> Estoque
           </Button>
