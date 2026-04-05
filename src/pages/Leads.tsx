@@ -117,7 +117,7 @@ const Leads = () => {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("leads").update({ status: status as any, last_contact_at: new Date().toISOString() }).eq("id", id));
+    const { error } = await supabase.from("leads").update({ status: status as any, last_contact_at: new Date().toISOString() }).eq("id", id);
     if (!error) {
       await supabase.from("lead_interactions").insert({
         lead_id: id, action_type: "status_change", message: `Status → ${statusLabels[status] || status}`, created_by: user?.id || null,
