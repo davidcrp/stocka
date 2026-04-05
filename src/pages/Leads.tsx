@@ -10,65 +10,50 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Users, Phone, Mail } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Plus, Search, Users, Phone, Mail, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 type Lead = {
-  id: string;
-  name: string;
-  phone: string | null;
-  email: string | null;
-  source: string | null;
-  status: string | null;
-  proposed_value: number | null;
-  notes: string | null;
-  created_at: string;
-  last_contact_at: string | null;
-  vehicle_id: string | null;
-  assigned_to: string | null;
+  id: string; name: string; phone: string | null; email: string | null;
+  source: string | null; status: string | null; proposed_value: number | null;
+  notes: string | null; created_at: string; last_contact_at: string | null;
+  vehicle_id: string | null; assigned_to: string | null;
 };
 
 const statusColors: Record<string, string> = {
-  novo: "bg-accent/10 text-accent",
-  contactado: "bg-primary/10 text-primary",
-  negociando: "bg-primary/20 text-primary",
-  fechado: "bg-primary/10 text-primary",
+  novo: "bg-accent/10 text-accent", contactado: "bg-primary/10 text-primary",
+  negociando: "bg-primary/20 text-primary", fechado: "bg-primary/10 text-primary",
   perdido: "bg-destructive/10 text-destructive",
 };
-
 const statusLabels: Record<string, string> = {
-  novo: "Novo",
-  contactado: "Contactado",
-  negociando: "Negociando",
-  fechado: "Fechado",
-  perdido: "Perdido",
+  novo: "Novo", contactado: "Contactado", negociando: "Negociando", fechado: "Fechado", perdido: "Perdido",
+};
+const sourceLabels: Record<string, string> = {
+  olx: "OLX", facebook: "Facebook", whatsapp: "WhatsApp", loja: "Loja",
+  instagram: "Instagram", indicacao: "Indicação", outro: "Outro",
 };
 
-const sourceLabels: Record<string, string> = {
-  olx: "OLX",
-  facebook: "Facebook",
-  whatsapp: "WhatsApp",
-  loja: "Loja",
-  instagram: "Instagram",
-  indicacao: "Indicação",
-  outro: "Outro",
-};
+const emptyForm = { name: "", phone: "", email: "", source: "outro", notes: "", proposed_value: 0 };
 
 const Leads = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [form, setForm] = useState({
-    name: "", phone: "", email: "", source: "outro" as string, notes: "", proposed_value: 0,
-  });
+  const [form, setForm] = useState(emptyForm);
 
   useEffect(() => { fetchLeads(); }, []);
 
@@ -78,23 +63,52 @@ const Leads = () => {
     setLoading(false);
   };
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const { error } = await supabase.from("leads").insert({
-      name: form.name,
-      phone: form.phone || null,
-      email: form.email || null,
-      source: form.source as any,
-      notes: form.notes || null,
-      proposed_value: form.proposed_value || null,
-      assigned_to: user?.id || null,
+  const openEdit = (l: Lead) => {
+    setEditingId(l.id);
+    setForm({
+      name: l.name, phone: l.phone || "", email: l.email || "",
+      source: l.source || "outro", notes: l.notes || "", proposed_value: l.proposed_value || 0,
     });
+    setDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setDialogOpen(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    const payload = {
+      name: form.name, phone: form.phone || null, email: form.email || null,
+      source: form.source as any, notes: form.notes || null, proposed_value: form.proposed_value || null,
+    };
+
+    let error;
+    if (editingId) {
+      ({ error } = await supabase.from("leads").update(payload).eq("id", editingId));
+    } else {
+      ({ error } = await supabase.from("leads").insert({ ...payload, assigned_to: user?.id || null }));
+    }
+
+    setSubmitting(false);
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Lead adicionado!" });
-      setDialogOpen(false);
-      setForm({ name: "", phone: "", email: "", source: "outro", notes: "", proposed_value: 0 });
+      toast({ title: editingId ? "Lead atualizado! ✅" : "Lead adicionado!" });
+      resetForm();
+      fetchLeads();
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("leads").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Lead excluído" });
       fetchLeads();
     }
   };
@@ -119,17 +133,18 @@ const Leads = () => {
           <h1 className="font-display text-2xl font-bold">Leads</h1>
           <p className="text-sm text-muted-foreground">{filtered.length} contatos</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(v) => { if (!v) resetForm(); else setDialogOpen(v); }}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-profit text-primary-foreground font-semibold shadow-glow hover:opacity-90">
+            <Button className="bg-gradient-profit text-primary-foreground font-semibold shadow-glow hover:opacity-90"
+              onClick={() => { setEditingId(null); setForm(emptyForm); }}>
               <Plus className="w-4 h-4 mr-2" /> Novo lead
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md bg-card border-border">
             <DialogHeader>
-              <DialogTitle className="font-display">Novo lead</DialogTitle>
+              <DialogTitle className="font-display">{editingId ? "Editar Lead" : "Novo Lead"}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleAdd} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <Input placeholder="Nome *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               <div className="grid grid-cols-2 gap-3">
                 <Input placeholder="Telefone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
@@ -147,7 +162,9 @@ const Leads = () => {
                 <Input type="number" placeholder="Valor proposto" value={form.proposed_value} onChange={(e) => setForm({ ...form, proposed_value: +e.target.value })} />
               </div>
               <Input placeholder="Observações" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-              <Button type="submit" className="w-full bg-gradient-profit text-primary-foreground font-semibold">Salvar</Button>
+              <Button type="submit" className="w-full bg-gradient-profit text-primary-foreground font-semibold" disabled={submitting}>
+                {submitting ? "Salvando..." : editingId ? "Atualizar" : "Salvar"}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -186,14 +203,36 @@ const Leads = () => {
                 </div>
                 {l.notes && <p className="text-sm text-muted-foreground mt-1">{l.notes}</p>}
               </div>
-              <Select value={l.status || "novo"} onValueChange={(v) => updateStatus(l.id, v)}>
-                <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(statusLabels).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Select value={l.status || "novo"} onValueChange={(v) => updateStatus(l.id, v)}>
+                  <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(statusLabels).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(l)}>
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-card border-border">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir lead?</AlertDialogTitle>
+                      <AlertDialogDescription>O lead {l.name} será removido permanentemente.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDelete(l.id)} className="bg-destructive text-destructive-foreground">Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
           </Card>
         ))}
@@ -202,7 +241,12 @@ const Leads = () => {
       {filtered.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>Nenhum lead encontrado</p>
+          <p className="mb-4">Nenhum lead encontrado</p>
+          {leads.length === 0 && (
+            <Button className="bg-gradient-profit text-primary-foreground font-semibold shadow-glow" onClick={() => setDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" /> Adicionar seu primeiro lead
+            </Button>
+          )}
         </div>
       )}
     </div>
