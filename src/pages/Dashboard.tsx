@@ -494,15 +494,14 @@ const Dashboard = () => {
       )}
 
       {/* ───── CHART + INSIGHTS SIDEBAR ───── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        {/* Revenue Chart */}
-        <Card className="xl:col-span-2 p-6 border-border/50">
-          <div className="flex items-center justify-between mb-5">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-5">
+        <Card className="xl:col-span-2 p-4 lg:p-6 border-border/50">
+          <div className="flex items-center justify-between mb-4 lg:mb-5">
             <div>
-              <h2 className="font-display text-lg font-bold">Faturamento e Lucro</h2>
-              <p className="text-xs text-muted-foreground mt-1">Últimos 12 meses</p>
+              <h2 className="font-display text-base lg:text-lg font-bold">Faturamento e Lucro</h2>
+              <p className="text-[10px] lg:text-xs text-muted-foreground mt-1">Últimos 12 meses</p>
             </div>
-            <div className="flex items-center gap-5 text-xs">
+            <div className="hidden sm:flex items-center gap-5 text-xs">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-primary/30" />
                 <span className="text-muted-foreground">Faturamento</span>
@@ -766,7 +765,7 @@ const ChartContent = ({ chartData, fmt }: { chartData: { month: string; revenue:
   const primaryFaded = primaryColor ? `hsl(${primaryColor} / 0.4)` : "hsl(142 71% 45% / 0.4)";
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={250}>
       <AreaChart data={chartData}>
         <defs>
           <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
