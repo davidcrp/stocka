@@ -293,11 +293,10 @@ const Dashboard = () => {
       </div>
 
       {/* ───── HERO PROFIT + SECONDARY KPIs ───── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Hero Profit Card - dominant */}
-        <Card className="lg:col-span-5 p-7 bg-gradient-to-br from-primary/12 via-primary/5 to-transparent border-primary/25 relative overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5">
+        {/* Hero Profit Card */}
+        <Card className="lg:col-span-5 p-5 lg:p-7 bg-gradient-to-br from-primary/12 via-primary/5 to-transparent border-primary/25 relative overflow-hidden">
           <div className="absolute -top-16 -right-16 w-48 h-48 bg-primary/8 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl" />
           <div className="relative">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
@@ -305,7 +304,7 @@ const Dashboard = () => {
               </div>
               <span className="text-xs font-bold text-primary uppercase tracking-widest">Lucro Mensal</span>
             </div>
-            <p className="font-display text-5xl font-black tracking-tighter mt-3">
+            <p className="font-display text-4xl lg:text-5xl font-black tracking-tighter mt-3">
               {fmt(stats.thisMonthProfit)}
             </p>
             <div className="flex items-center gap-3 mt-3">
@@ -315,52 +314,52 @@ const Dashboard = () => {
                 {profitPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                 {profitChangeNum >= 0 ? "+" : ""}{profitChangeNum.toFixed(1)}%
               </div>
-              <span className="text-sm text-muted-foreground">vs mês anterior</span>
+              <span className="text-xs lg:text-sm text-muted-foreground">vs mês anterior</span>
             </div>
-            <div className="mt-6 pt-5 border-t border-primary/15 grid grid-cols-3 gap-4">
+            <div className="mt-5 pt-4 border-t border-primary/15 grid grid-cols-3 gap-3">
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Vendas</p>
-                <p className="font-display text-2xl font-black mt-1">{stats.thisMonthSales}</p>
+                <p className="font-display text-xl lg:text-2xl font-black mt-1">{stats.thisMonthSales}</p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Lucro/Carro</p>
-                <p className="font-display text-2xl font-black text-primary mt-1">{fmtK(stats.profitPerCar)}</p>
+                <p className="font-display text-xl lg:text-2xl font-black text-primary mt-1">{fmtK(stats.profitPerCar)}</p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Trocas</p>
-                <p className="font-display text-2xl font-black mt-1">{stats.tradesCount}</p>
+                <p className="font-display text-xl lg:text-2xl font-black mt-1">{stats.tradesCount}</p>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* KPI Grid - 4 cards */}
-        <div className="lg:col-span-7 grid grid-cols-2 gap-4">
+        {/* KPI Grid */}
+        <div className="lg:col-span-7 grid grid-cols-2 gap-3 lg:gap-4">
           <KPICard
             icon={Wallet} label="Capital Investido" value={fmtK(stats.totalInvested)}
-            sublabel={`${stats.inStock} veículo${stats.inStock !== 1 ? "s" : ""} em estoque`}
-            detail={`Custo médio: ${stats.inStock > 0 ? fmtK(stats.totalInvested / stats.inStock) : "—"}`}
+            sublabel={`${stats.inStock} veículo${stats.inStock !== 1 ? "s" : ""}`}
+            detail={`Médio: ${stats.inStock > 0 ? fmtK(stats.totalInvested / stats.inStock) : "—"}`}
           />
           <KPICard
             icon={Target} label="Lucro Potencial" value={fmtK(stats.totalProfitPotential)}
-            sublabel={`Estoque vale ${fmtK(stats.totalInventoryValue)}`}
+            sublabel={`Estoque: ${fmtK(stats.totalInventoryValue)}`}
             highlight={stats.totalProfitPotential > 0}
-            detail={`Margem média: ${stats.avgMargin.toFixed(0)}%`}
+            detail={`Margem: ${stats.avgMargin.toFixed(0)}%`}
           />
           <KPICard
             icon={Timer} label="Dias p/ Vender"
             value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}d` : "—"}
-            sublabel={stats.avgDaysToSell > 30 ? "⚠️ Acima do ideal (30d)" : "✅ Dentro do saudável"}
+            sublabel={stats.avgDaysToSell > 30 ? "⚠️ Acima do ideal" : "✅ Saudável"}
             warning={stats.avgDaysToSell > 30}
-            detail={stats.capitalAtRisk > 0 ? `${fmtK(stats.capitalAtRisk)} em risco` : "Sem capital em risco"}
+            detail={stats.capitalAtRisk > 0 ? `${fmtK(stats.capitalAtRisk)} em risco` : "Sem risco"}
           />
           <KPICard
             icon={Activity} label="Performance"
             value={stats.avgMargin > 0 ? `${stats.avgMargin.toFixed(0)}%` : "—"}
-            sublabel={stats.avgMargin >= 20 ? "Margem excelente" : stats.avgMargin >= 10 ? "Margem moderada" : "Margem baixa"}
+            sublabel={stats.avgMargin >= 20 ? "Excelente" : stats.avgMargin >= 10 ? "Moderada" : "Baixa"}
             warning={stats.avgMargin > 0 && stats.avgMargin < 10}
             highlight={stats.avgMargin >= 20}
-            detail={`${stats.totalSales} vendas totais`}
+            detail={`${stats.totalSales} vendas`}
           />
         </div>
       </div>
