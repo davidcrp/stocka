@@ -61,10 +61,14 @@ const Leads = () => {
       const { data } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
       return (data as Lead[]) || [];
     },
-    staleTime: 30_000,
+    staleTime: 15_000,
   });
 
-  const fetchLeads = () => queryClient.invalidateQueries({ queryKey: ["leads"] });
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["leads"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["vendas-data"] });
+  };
 
   const openEdit = (l: Lead) => {
     setEditingId(l.id);
@@ -83,9 +87,13 @@ const Leads = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.name.trim()) {
+      toast({ title: "Nome é obrigatório", variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
     const payload = {
-      name: form.name, phone: form.phone || null, email: form.email || null,
+      name: form.name.trim(), phone: form.phone || null, email: form.email || null,
       source: form.source as any, notes: form.notes || null, proposed_value: form.proposed_value || null,
     };
 
@@ -102,7 +110,7 @@ const Leads = () => {
     } else {
       toast({ title: editingId ? "Lead atualizado! ✅" : "Lead adicionado!" });
       resetForm();
-      fetchLeads();
+      invalidateAll();
     }
   };
 
@@ -112,13 +120,17 @@ const Leads = () => {
       toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Lead excluído" });
-      fetchLeads();
+      invalidateAll();
     }
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from("leads").update({ status: status as any, last_contact_at: new Date().toISOString() }).eq("id", id);
-    fetchLeads();
+    const { error } = await supabase.from("leads").update({ status: status as any, last_contact_at: new Date().toISOString() }).eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao atualizar status", description: error.message, variant: "destructive" });
+    } else {
+      invalidateAll();
+    }
   };
 
   const filtered = leads.filter((l) => {
@@ -127,7 +139,7 @@ const Leads = () => {
     return matchSearch && matchStatus;
   });
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Carregando...</div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6">

@@ -16,7 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Search, Car, Calendar, DollarSign, TrendingUp, Zap, AlertTriangle, Pencil, Trash2, Upload, X } from "lucide-react";
+import { Plus, Search, Car, Calendar, DollarSign, TrendingUp, Zap, AlertTriangle, Pencil, Trash2, Upload, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInDays } from "date-fns";
 
@@ -62,10 +62,14 @@ const Estoque = () => {
       const { data } = await supabase.from("vehicles").select("*").order("created_at", { ascending: false });
       return (data as Vehicle[]) || [];
     },
-    staleTime: 30_000,
+    staleTime: 15_000,
   });
 
-  const fetchVehicles = () => queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["vendas-data"] });
+  };
 
   const totalCost = form.purchase_price + form.reconditioning_cost;
   const suggestedPrice = totalCost > 0 ? Math.round(totalCost * (1 + form.desired_margin / 100)) : 0;
@@ -118,7 +122,7 @@ const Estoque = () => {
     } else {
       toast({ title: editingId ? "Veículo atualizado! ✅" : "Veículo adicionado! 🚗" });
       resetForm();
-      fetchVehicles();
+      invalidateAll();
     }
   };
 
@@ -128,8 +132,30 @@ const Estoque = () => {
       toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Veículo excluído" });
-      fetchVehicles();
+      invalidateAll();
     }
+  };
+
+  const handleQuickSell = async (v: Vehicle) => {
+    const salePrice = v.listing_price || v.purchase_price;
+    const { error } = await supabase.from("sales").insert({
+      vehicle_id: v.id,
+      seller_id: user?.id || null,
+      final_price: salePrice,
+      commission: 0,
+      payment_method: "dinheiro",
+    });
+    if (error) {
+      toast({ title: "Erro ao registrar venda", description: error.message, variant: "destructive" });
+      return;
+    }
+    await supabase.from("vehicles").update({
+      status: "vendido" as const,
+      sale_date: new Date().toISOString().split("T")[0],
+      final_sale_price: salePrice,
+    }).eq("id", v.id);
+    toast({ title: `${v.brand} ${v.model} vendido! 🎉` });
+    invalidateAll();
   };
 
   const handlePhotoUpload = async (vehicleId: string, files: FileList) => {
@@ -149,16 +175,9 @@ const Estoque = () => {
       const existing = vehicle?.photos || [];
       await supabase.from("vehicles").update({ photos: [...existing, ...newUrls] }).eq("id", vehicleId);
       toast({ title: `${newUrls.length} foto(s) enviada(s)! 📸` });
-      fetchVehicles();
+      invalidateAll();
     }
     setUploadingPhotos(false);
-  };
-
-  const handleRemovePhoto = async (vehicleId: string, photoUrl: string) => {
-    const vehicle = vehicles.find((v) => v.id === vehicleId);
-    const updated = (vehicle?.photos || []).filter((p) => p !== photoUrl);
-    await supabase.from("vehicles").update({ photos: updated }).eq("id", vehicleId);
-    fetchVehicles();
   };
 
   const filtered = vehicles.filter((v) => {
@@ -346,16 +365,17 @@ const Estoque = () => {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((v) => {
           const days = differenceInDays(new Date(), new Date(v.entry_date));
-          const margin = (v.listing_price || 0) - v.purchase_price - (v.reconditioning_cost || 0);
+          const cost = v.purchase_price + (v.reconditioning_cost || 0);
+          const margin = (v.listing_price || 0) - cost;
           const isDead = days > 60;
           const isSlow = days > 30;
+          const dailyCost = days > 0 ? Math.round(cost / days) : 0;
           const firstPhoto = v.photos && v.photos.length > 0 ? v.photos[0] : null;
 
           return (
             <Card key={v.id} className={`bg-gradient-card border-border/50 hover:border-border transition-all shadow-card overflow-hidden ${
               isDead ? "border-destructive/20" : isSlow ? "border-accent/20" : ""
             }`}>
-              {/* Photo */}
               {firstPhoto && (
                 <div className="aspect-video overflow-hidden">
                   <img src={firstPhoto} alt={`${v.brand} ${v.model}`} className="w-full h-full object-cover" loading="lazy" />
@@ -394,13 +414,14 @@ const Estoque = () => {
                   </div>
                 ) : null}
 
-                {isDead && (
+                {(isDead || isSlow) && v.status === "em_estoque" && (
                   <div className="mt-2 rounded-lg bg-destructive/5 border border-destructive/10 px-3 py-2">
-                    <p className="text-[10px] text-destructive font-medium">⚠️ Este carro está te fazendo perder dinheiro</p>
+                    <p className="text-[10px] text-destructive font-medium">
+                      💸 Custo parado: {formatCurrency(dailyCost)}/dia • {isDead ? "⚠️ Reduza o preço urgente" : "Considere reduzir o preço"}
+                    </p>
                   </div>
                 )}
 
-                {/* Photos section */}
                 {v.photos && v.photos.length > 1 && (
                   <div className="mt-3 flex gap-1 overflow-x-auto">
                     {v.photos.slice(1, 5).map((p, i) => (
@@ -412,13 +433,34 @@ const Estoque = () => {
 
                 {/* Actions */}
                 <div className="mt-3 pt-3 border-t border-border/30 flex items-center gap-2">
+                  {v.status === "em_estoque" && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" className="flex-1 text-xs h-8 bg-gradient-profit text-primary-foreground">
+                          <Tag className="w-3 h-3 mr-1" /> Vender
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-card border-border">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Venda rápida</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Registrar venda do {v.brand} {v.model} por {formatCurrency(v.listing_price || v.purchase_price)}? Para personalizar preço e comissão, use a página de Vendas.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleQuickSell(v)} className="bg-gradient-profit text-primary-foreground">Confirmar Venda</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                   <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => openEdit(v)}>
                     <Pencil className="w-3 h-3 mr-1" /> Editar
                   </Button>
-                  <label className="flex-1">
-                    <Button size="sm" variant="outline" className="w-full text-xs h-8" type="button" disabled={uploadingPhotos}
+                  <label>
+                    <Button size="sm" variant="outline" className="text-xs h-8" type="button" disabled={uploadingPhotos}
                       onClick={() => document.getElementById(`photo-${v.id}`)?.click()}>
-                      <Upload className="w-3 h-3 mr-1" /> {uploadingPhotos ? "Enviando..." : "Fotos"}
+                      <Upload className="w-3 h-3" />
                     </Button>
                     <input id={`photo-${v.id}`} type="file" accept="image/*" multiple className="hidden"
                       onChange={(e) => e.target.files && handlePhotoUpload(v.id, e.target.files)} />
@@ -432,7 +474,7 @@ const Estoque = () => {
                     <AlertDialogContent className="bg-card border-border">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Excluir veículo?</AlertDialogTitle>
-                        <AlertDialogDescription>Esta ação não pode ser desfeita. O veículo {v.brand} {v.model} será removido permanentemente.</AlertDialogDescription>
+                        <AlertDialogDescription>O veículo {v.brand} {v.model} será removido permanentemente.</AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
