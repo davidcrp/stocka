@@ -5,8 +5,8 @@ import { differenceInDays, format, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   TrendingUp, TrendingDown, Car, DollarSign, BarChart3,
-  ChevronRight, ShieldAlert, Clock, ArrowLeftRight,
-  CheckCircle2, Image as ImageIcon, Minus, Gauge,
+  ChevronRight, ShieldAlert,
+  CheckCircle2, Image as ImageIcon, Minus,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
