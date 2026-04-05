@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 import {
   TrendingUp, TrendingDown, Car, DollarSign, BarChart3,
   ArrowUpRight, Clock, Zap, Tag,
-  ChevronRight, Flame, ShieldAlert, Wallet, Timer, Target,
+  ChevronRight, Flame, ShieldAlert, Wallet, Timer, Target, ArrowLeftRight,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -41,15 +41,17 @@ type Stats = {
 };
 
 const fetchDashboardStats = async (): Promise<Stats> => {
-  const [vehiclesRes, salesRes, expensesRes] = await Promise.all([
+  const [vehiclesRes, salesRes, expensesRes, tradesRes] = await Promise.all([
     supabase.from("vehicles").select("*"),
     supabase.from("sales").select("*, vehicles(purchase_price, reconditioning_cost, transport_cost)"),
     supabase.from("vehicle_expenses").select("vehicle_id, amount"),
+    supabase.from("trades").select("profit"),
   ]);
 
   const vehicles = vehiclesRes.data || [];
   const sales = salesRes.data || [];
   const expenses = expensesRes.data || [];
+  const trades = tradesRes.data || [];
 
   const expensesByVehicle: Record<string, number> = {};
   expenses.forEach((e) => {
