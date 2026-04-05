@@ -1,63 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format, startOfMonth, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
-  TrendingUp,
-  TrendingDown,
-  Car,
-  Users,
-  DollarSign,
-  BarChart3,
-  ArrowUpRight,
-  Clock,
-  Target,
-  AlertTriangle,
-  Zap,
-  Phone,
-  Tag,
-  MessageCircleWarning,
-  ChevronRight,
-  Flame,
-  ShieldAlert,
+  TrendingUp, TrendingDown, Car, Users, DollarSign, BarChart3,
+  ArrowUpRight, Clock, Target, AlertTriangle, Zap, Phone, Tag,
+  MessageCircleWarning, ChevronRight, Flame, ShieldAlert,
 } from "lucide-react";
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-
-import car1 from "@/assets/cars/car1.jpg";
-import car2 from "@/assets/cars/car2.jpg";
-import car3 from "@/assets/cars/car3.jpg";
-import car4 from "@/assets/cars/car4.jpg";
-import car5 from "@/assets/cars/car5.jpg";
-import car6 from "@/assets/cars/car6.jpg";
-
-const demoCarImages = [car1, car2, car3, car4, car5, car6];
-
-const chartData = [
-  { month: "Jan", revenue: 145000, profit: 32000 },
-  { month: "Fev", revenue: 168000, profit: 38000 },
-  { month: "Mar", revenue: 152000, profit: 29000 },
-  { month: "Abr", revenue: 198000, profit: 47000 },
-  { month: "Mai", revenue: 210000, profit: 52000 },
-  { month: "Jun", revenue: 185000, profit: 41000 },
-  { month: "Jul", revenue: 230000, profit: 58000 },
-  { month: "Ago", revenue: 255000, profit: 64000 },
-  { month: "Set", revenue: 242000, profit: 55000 },
-  { month: "Out", revenue: 278000, profit: 72000 },
-  { month: "Nov", revenue: 295000, profit: 78000 },
-  { month: "Dez", revenue: 310000, profit: 85000 },
-];
 
 type Stats = {
   inStock: number;
@@ -70,27 +25,20 @@ type Stats = {
   avgDaysToSell: number;
   conversionRate: number;
   lostLeadsThisWeek: number;
+  prevMonthProfit: number;
+  prevMonthSales: number;
   agingVehicles: {
-    id: string;
-    brand: string;
-    model: string;
-    year_fab: number;
-    days: number;
-    listing_price: number;
-    purchase_price: number;
-    reconditioning_cost: number;
-    status: string;
+    id: string; brand: string; model: string; year_fab: number;
+    days: number; listing_price: number; purchase_price: number;
+    reconditioning_cost: number; status: string;
   }[];
   funnelData: { name: string; value: number }[];
+  chartData: { month: string; revenue: number; profit: number }[];
 };
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<Stats>({
-    inStock: 0, totalLeads: 0, newLeads: 0, pendingLeads: 0, totalSales: 0,
-    totalRevenue: 0, totalProfit: 0, avgDaysToSell: 0, conversionRate: 0,
-    lostLeadsThisWeek: 0, agingVehicles: [], funnelData: [],
-  });
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { fetchStats(); }, []);
@@ -124,11 +72,39 @@ const Dashboard = () => {
       expensesByVehicle[e.vehicle_id] = (expensesByVehicle[e.vehicle_id] || 0) + (e.amount || 0);
     });
 
-    const totalProfit = sales.reduce((s, sale) => {
+    const calcProfit = (sale: any) => {
       const v = sale.vehicles as any;
       const cost = (v?.purchase_price || 0) + (v?.reconditioning_cost || 0) + (expensesByVehicle[sale.vehicle_id] || 0);
-      return s + (sale.final_price || 0) - cost - (sale.commission || 0);
-    }, 0);
+      return (sale.final_price || 0) - cost - (sale.commission || 0);
+    };
+
+    const totalProfit = sales.reduce((s, sale) => s + calcProfit(sale), 0);
+
+    // Previous month calculations
+    const now = new Date();
+    const thisMonthStart = startOfMonth(now);
+    const prevMonthStart = startOfMonth(subMonths(now, 1));
+    const prevMonthSales = sales.filter((s) => {
+      const d = new Date(s.sale_date);
+      return d >= prevMonthStart && d < thisMonthStart;
+    });
+    const prevMonthProfit = prevMonthSales.reduce((s, sale) => s + calcProfit(sale), 0);
+
+    // Chart: real monthly data (last 12 months)
+    const chartData: { month: string; revenue: number; profit: number }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const monthStart = startOfMonth(subMonths(now, i));
+      const monthEnd = startOfMonth(subMonths(now, i - 1));
+      const monthSales = sales.filter((s) => {
+        const d = new Date(s.sale_date);
+        return d >= monthStart && d < monthEnd;
+      });
+      chartData.push({
+        month: format(monthStart, "MMM", { locale: ptBR }),
+        revenue: monthSales.reduce((s, sale) => s + (sale.final_price || 0), 0),
+        profit: monthSales.reduce((s, sale) => s + calcProfit(sale), 0),
+      });
+    }
 
     const soldVehicles = vehicles.filter((v) => v.status === "vendido" && v.entry_date && v.sale_date);
     const avgDays = soldVehicles.length > 0
@@ -163,6 +139,7 @@ const Dashboard = () => {
       pendingLeads: pendingLeads.length, totalSales: sales.length,
       totalRevenue, totalProfit, avgDaysToSell: Math.round(avgDays),
       conversionRate: Math.round(conversionRate), lostLeadsThisWeek, agingVehicles, funnelData,
+      chartData, prevMonthProfit, prevMonthSales: prevMonthSales.length,
     });
     setLoading(false);
   };
@@ -176,7 +153,7 @@ const Dashboard = () => {
     return fmt(v);
   };
 
-  if (loading) {
+  if (loading || !stats) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -188,136 +165,84 @@ const Dashboard = () => {
   const slowVehicles = stats.agingVehicles.filter((v) => v.status === "slow");
   const hasAlerts = deadVehicles.length > 0 || stats.pendingLeads > 0 || stats.lostLeadsThisWeek > 0;
 
+  // Real month-over-month change
+  const profitChange = stats.prevMonthProfit > 0
+    ? `${((stats.totalProfit - stats.prevMonthProfit) / stats.prevMonthProfit * 100).toFixed(1)}%`
+    : stats.totalProfit > 0 ? "+100%" : "0%";
+  const profitPositive = stats.totalProfit >= stats.prevMonthProfit;
+
   return (
     <div className="space-y-6">
       {/* Alertas Acionáveis */}
       {hasAlerts && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {deadVehicles.length > 0 && (
-            <AlertBanner
-              icon={ShieldAlert}
-              color="destructive"
+            <AlertBanner icon={ShieldAlert} color="destructive"
               title={`${deadVehicles.length} carro${deadVehicles.length > 1 ? "s" : ""} parado${deadVehicles.length > 1 ? "s" : ""} há 60+ dias`}
               subtitle="Estão te fazendo perder dinheiro — reduza o preço agora"
-              actionLabel="Reduzir Preços"
-              onClick={() => navigate("/estoque")}
+              actionLabel="Reduzir Preços" onClick={() => navigate("/estoque")}
             />
           )}
           {stats.pendingLeads > 0 && (
-            <AlertBanner
-              icon={MessageCircleWarning}
-              color="accent"
+            <AlertBanner icon={MessageCircleWarning} color="accent"
               title={`${stats.pendingLeads} lead${stats.pendingLeads > 1 ? "s" : ""} aguardando resposta`}
               subtitle="Leads sem contato perdem interesse rápido"
-              actionLabel="Contatar Leads"
-              onClick={() => navigate("/leads")}
+              actionLabel="Contatar Leads" onClick={() => navigate("/leads")}
             />
           )}
           {stats.lostLeadsThisWeek > 0 && (
-            <AlertBanner
-              icon={TrendingDown}
-              color="destructive"
+            <AlertBanner icon={TrendingDown} color="destructive"
               title={`${stats.lostLeadsThisWeek} venda${stats.lostLeadsThisWeek > 1 ? "s" : ""} perdida${stats.lostLeadsThisWeek > 1 ? "s" : ""} esta semana`}
               subtitle="Analise os motivos e ajuste sua estratégia"
-              actionLabel="Ver Leads"
-              onClick={() => navigate("/leads")}
+              actionLabel="Ver Leads" onClick={() => navigate("/leads")}
             />
           )}
         </div>
       )}
 
       <div className="flex gap-6">
-        {/* Conteúdo principal */}
         <div className="flex-1 space-y-6 min-w-0">
-          {/* Cabeçalho */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-display text-2xl font-bold tracking-tight">Centro de Controle</h1>
-              <p className="text-[13px] text-muted-foreground mt-0.5">Seu dinheiro em tempo real</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <select className="bg-secondary/50 border border-border rounded-xl px-3 py-2 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50">
-                <option>Últimos 30 dias</option>
-                <option>Últimos 7 dias</option>
-                <option>Últimos 90 dias</option>
-                <option>Este ano</option>
-              </select>
+              <p className="text-[13px] text-muted-foreground mt-0.5">Dados em tempo real do seu negócio</p>
             </div>
           </div>
 
-          {/* KPI Cards */}
+          {/* KPI Cards — all real data */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KPICard
-              icon={DollarSign}
-              label="Lucro Total"
-              value={stats.totalProfit > 0 ? fmt(stats.totalProfit) : "R$0"}
-              change="+12,5%"
-              positive
-              sublabel="vs. mês passado"
-              highlight
+            <KPICard icon={DollarSign} label="Lucro Total" value={fmt(stats.totalProfit)}
+              change={profitPositive ? `+${profitChange}` : profitChange} positive={profitPositive}
+              sublabel={`${stats.totalSales} vendas`} highlight
             />
-            <KPICard
-              icon={Car}
-              label="Anúncios Ativos"
-              value={String(stats.inStock)}
+            <KPICard icon={Car} label="Em Estoque" value={String(stats.inStock)}
               change={deadVehicles.length > 0 ? `${deadVehicles.length} parados` : "Saudável"}
-              positive={deadVehicles.length === 0}
-              sublabel="Em todos os canais"
+              positive={deadVehicles.length === 0} sublabel={`${fmt(stats.agingVehicles.reduce((s, v) => s + v.purchase_price + v.reconditioning_cost, 0))} investido`}
             />
-            <KPICard
-              icon={Users}
-              label="Leads Hoje"
-              value={String(stats.newLeads)}
-              change="+3"
-              positive
-              sublabel="Novas consultas"
+            <KPICard icon={Users} label="Leads Ativos" value={String(stats.totalLeads)}
+              change={`${stats.newLeads} novos`} positive={stats.newLeads > 0}
+              sublabel={`${stats.pendingLeads} aguardando`}
             />
-            <KPICard
-              icon={Target}
-              label="Taxa de Conversão"
-              value={`${stats.conversionRate}%`}
-              change={stats.conversionRate < 30 ? "Baixa!" : "+2,1%"}
-              positive={stats.conversionRate >= 30}
-              sublabel="Lead para venda"
+            <KPICard icon={Target} label="Taxa de Conversão" value={`${stats.conversionRate}%`}
+              change={stats.conversionRate >= 30 ? "Boa" : "Melhorar"} positive={stats.conversionRate >= 30}
+              sublabel="Lead → venda"
             />
           </div>
 
           {/* Ações Rápidas */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <QuickAction
-              icon={Tag}
-              label="Reduzir Preços"
-              count={deadVehicles.length + slowVehicles.length}
-              color="destructive"
-              onClick={() => navigate("/estoque")}
-            />
-            <QuickAction
-              icon={Phone}
-              label="Contatar Leads"
-              count={stats.pendingLeads}
-              color="accent"
-              onClick={() => navigate("/leads")}
-            />
-            <QuickAction
-              icon={Car}
-              label="Adicionar Veículo"
-              color="primary"
-              onClick={() => navigate("/estoque")}
-            />
-            <QuickAction
-              icon={DollarSign}
-              label="Registrar Venda"
-              color="primary"
-              onClick={() => navigate("/vendas")}
-            />
+            <QuickAction icon={Tag} label="Reduzir Preços" count={deadVehicles.length + slowVehicles.length} color="destructive" onClick={() => navigate("/estoque")} />
+            <QuickAction icon={Phone} label="Contatar Leads" count={stats.pendingLeads} color="accent" onClick={() => navigate("/leads")} />
+            <QuickAction icon={Car} label="Adicionar Veículo" color="primary" onClick={() => navigate("/estoque")} />
+            <QuickAction icon={DollarSign} label="Registrar Venda" color="primary" onClick={() => navigate("/vendas")} />
           </div>
 
-          {/* Gráfico de Receita */}
+          {/* Gráfico — REAL data */}
           <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="font-display text-lg font-semibold">Faturamento e Lucro</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Desempenho mensal</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Últimos 12 meses (dados reais)</p>
               </div>
               <div className="flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1.5">
@@ -330,31 +255,38 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0.05} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 16% 14%)" />
-                <XAxis dataKey="month" stroke="hsl(220 9% 40%)" tick={{ fontSize: 11, fill: "hsl(220 9% 50%)" }} axisLine={false} tickLine={false} />
-                <YAxis stroke="hsl(220 9% 40%)" tick={{ fontSize: 11, fill: "hsl(220 9% 50%)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(220 26% 8%)", border: "1px solid hsl(220 16% 16%)", borderRadius: "12px", fontSize: "12px", boxShadow: "0 8px 32px -8px rgba(0,0,0,0.6)" }}
-                  labelStyle={{ color: "hsl(220 13% 91%)", fontWeight: 600 }}
-                  itemStyle={{ color: "hsl(220 9% 62%)" }}
-                  formatter={(value: number) => [fmt(value), ""]}
-                />
-                <Area type="monotone" dataKey="revenue" stroke="hsl(142 71% 45% / 0.4)" strokeWidth={2} fill="url(#revenueGradient)" name="Faturamento" />
-                <Area type="monotone" dataKey="profit" stroke="hsl(142 71% 45%)" strokeWidth={2.5} fill="url(#profitGradient)" name="Lucro" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {stats.chartData.some((d) => d.revenue > 0) ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={stats.chartData}>
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0.05} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 16% 14%)" />
+                  <XAxis dataKey="month" stroke="hsl(220 9% 40%)" tick={{ fontSize: 11, fill: "hsl(220 9% 50%)" }} axisLine={false} tickLine={false} />
+                  <YAxis stroke="hsl(220 9% 40%)" tick={{ fontSize: 11, fill: "hsl(220 9% 50%)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(220 26% 8%)", border: "1px solid hsl(220 16% 16%)", borderRadius: "12px", fontSize: "12px" }}
+                    formatter={(value: number) => [fmt(value), ""]}
+                  />
+                  <Area type="monotone" dataKey="revenue" stroke="hsl(142 71% 45% / 0.4)" strokeWidth={2} fill="url(#revenueGradient)" name="Faturamento" />
+                  <Area type="monotone" dataKey="profit" stroke="hsl(142 71% 45%)" strokeWidth={2.5} fill="url(#profitGradient)" name="Lucro" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[280px] flex items-center justify-center text-muted-foreground text-sm">
+                <div className="text-center">
+                  <BarChart3 className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                  <p>Registre vendas para ver o gráfico</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Funil de Vendas */}
@@ -368,127 +300,119 @@ const Dashboard = () => {
                 Ver CRM <ArrowUpRight className="w-3 h-3" />
               </button>
             </div>
-            <div className="space-y-3">
-              {stats.funnelData.map((stage, i) => {
-                const maxVal = Math.max(...stats.funnelData.map((s) => s.value), 1);
-                const colors = ["bg-muted-foreground", "bg-accent", "bg-primary/70", "bg-primary"];
-                return (
-                  <div key={stage.name} className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground w-24 text-right">{stage.name}</span>
-                    <div className="flex-1">
-                      <Progress value={(stage.value / maxVal) * 100} className={`h-6 bg-secondary/50 [&>div]:${colors[i]}`} />
+            {stats.funnelData.some((s) => s.value > 0) ? (
+              <div className="space-y-3">
+                {stats.funnelData.map((stage, i) => {
+                  const maxVal = Math.max(...stats.funnelData.map((s) => s.value), 1);
+                  const colors = ["bg-muted-foreground", "bg-accent", "bg-primary/70", "bg-primary"];
+                  return (
+                    <div key={stage.name} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-24 text-right">{stage.name}</span>
+                      <div className="flex-1">
+                        <Progress value={(stage.value / maxVal) * 100} className={`h-6 bg-secondary/50 [&>div]:${colors[i]}`} />
+                      </div>
+                      <span className="font-display text-sm font-bold w-8">{stage.value}</span>
                     </div>
-                    <span className="font-display text-sm font-bold w-8">{stage.value}</span>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p>Adicione leads para ver o funil</p>
+              </div>
+            )}
           </div>
 
-          {/* Preview do Estoque Inteligente */}
+          {/* Estoque Preview */}
           <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="font-display text-lg font-semibold">Estoque Inteligente</h2>
+                <h2 className="font-display text-lg font-semibold">Estoque</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {deadVehicles.length > 0
                     ? `⚠️ ${deadVehicles.length} veículo${deadVehicles.length > 1 ? "s" : ""} perdendo dinheiro`
                     : `${stats.inStock} veículos em estoque`}
                 </p>
               </div>
-              <a href="/estoque" className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
+              <button onClick={() => navigate("/estoque")} className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
                 Ver todos <ArrowUpRight className="w-3 h-3" />
-              </a>
+              </button>
             </div>
 
             {stats.agingVehicles.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                {stats.agingVehicles.slice(0, 6).map((v, i) => (
-                  <InventoryCard
-                    key={v.id}
-                    image={demoCarImages[i % demoCarImages.length]}
-                    brand={v.brand}
-                    model={v.model}
-                    year={v.year_fab}
-                    price={v.listing_price}
-                    cost={v.purchase_price + v.reconditioning_cost}
-                    days={v.days}
-                    status={v.status as "hot" | "slow" | "dead"}
-                  />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {stats.agingVehicles.slice(0, 4).map((v) => (
+                  <InventoryCard key={v.id} vehicle={v} fmt={fmt} />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                {demoCarImages.map((img, i) => (
-                  <InventoryCard
-                    key={i}
-                    image={img}
-                    brand={["Toyota", "Honda", "Hyundai", "Jeep", "VW", "Chevrolet"][i]}
-                    model={["Corolla", "Civic", "HB20", "Compass", "T-Cross", "Onix"][i]}
-                    year={2023 + (i % 2)}
-                    price={[89900, 115000, 72000, 145000, 98000, 68000][i]}
-                    cost={[72000, 92000, 58000, 118000, 79000, 54000][i]}
-                    days={[5, 12, 35, 48, 8, 65][i]}
-                    status={(["hot", "hot", "slow", "slow", "hot", "dead"] as const)[i]}
-                  />
-                ))}
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                <Car className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p>Adicione veículos ao estoque</p>
+                <Button size="sm" className="mt-3" onClick={() => navigate("/estoque")}>
+                  <Car className="w-4 h-4 mr-2" /> Adicionar Veículo
+                </Button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Painel Lateral Direito */}
+        {/* Painel Lateral — ALL REAL DATA */}
         <div className="hidden xl:block w-[280px] shrink-0 space-y-4">
-          {/* Resumo de Lucro */}
           <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
             <h3 className="font-display text-sm font-semibold mb-4 flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-primary" />
               Resumo Financeiro
             </h3>
             <div className="space-y-3">
-              <FinanceRow label="Faturamento" value={fmtK(stats.totalRevenue || 1225940)} positive />
-              <FinanceRow label="Lucro Líquido" value={fmtK(stats.totalProfit || 739498)} positive />
-              <FinanceRow label="Ticket Médio" value={stats.totalSales > 0 ? fmtK(stats.totalRevenue / stats.totalSales) : "R$96k"} />
-              <FinanceRow label="Lucro/Carro" value={stats.totalSales > 0 ? fmtK(stats.totalProfit / stats.totalSales) : "R$39,5k"} positive />
+              <FinanceRow label="Faturamento" value={fmtK(stats.totalRevenue)} positive={stats.totalRevenue > 0} />
+              <FinanceRow label="Lucro Líquido" value={fmtK(stats.totalProfit)} positive={stats.totalProfit > 0} />
+              <FinanceRow label="Ticket Médio" value={stats.totalSales > 0 ? fmtK(stats.totalRevenue / stats.totalSales) : "R$0"} />
+              <FinanceRow label="Lucro/Carro" value={stats.totalSales > 0 ? fmtK(stats.totalProfit / stats.totalSales) : "R$0"} positive={stats.totalProfit > 0} />
             </div>
           </div>
 
-          {/* KPIs Detalhados */}
           <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
             <h3 className="font-display text-sm font-semibold mb-4 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-primary" />
               KPIs Operacionais
             </h3>
             <div className="space-y-3">
-              <KPIRow label="Dias médios p/ vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "47"} icon={Clock} warning={stats.avgDaysToSell > 45} />
-              <KPIRow label="Custo médio aquisição" value={stats.totalSales > 0 ? fmtK(stats.totalRevenue / stats.totalSales) : "R$48,8k"} icon={DollarSign} />
-              <KPIRow label="Conversão de leads" value={`${stats.conversionRate || 38}%`} icon={Target} warning={stats.conversionRate < 30} />
+              <KPIRow label="Dias médios p/ vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "—"} icon={Clock} warning={stats.avgDaysToSell > 45} />
+              <KPIRow label="Conversão de leads" value={`${stats.conversionRate}%`} icon={Target} warning={stats.conversionRate > 0 && stats.conversionRate < 30} />
               <KPIRow label="Veículos parados" value={`${deadVehicles.length}`} icon={AlertTriangle} warning={deadVehicles.length > 0} />
+              <KPIRow label="Vendas realizadas" value={`${stats.totalSales}`} icon={DollarSign} />
             </div>
           </div>
 
-          {/* Insights Inteligentes */}
-          <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
-            <h3 className="font-display text-sm font-semibold mb-3 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-primary" />
-              Insights Inteligentes
-            </h3>
-            <div className="space-y-2.5">
-              <InsightCard text="SUVs estão vendendo 23% mais rápido esta semana" type="positive" />
-              {deadVehicles.length > 0 && (
-                <InsightCard
-                  text={`Reduza o preço do ${deadVehicles[0].brand} ${deadVehicles[0].model} para acelerar a venda`}
-                  type="warning"
-                />
-              )}
-              {stats.conversionRate < 40 && (
-                <InsightCard text="Sua taxa de conversão pode melhorar com follow-ups mais rápidos" type="warning" />
-              )}
-              <InsightCard text="Hatches populares têm alta demanda no mercado agora" type="positive" />
+          {/* Dynamic insights based on real data */}
+          {(deadVehicles.length > 0 || stats.pendingLeads > 0 || stats.totalSales > 0) && (
+            <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
+              <h3 className="font-display text-sm font-semibold mb-3 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-primary" />
+                Insights
+              </h3>
+              <div className="space-y-2.5">
+                {deadVehicles.length > 0 && (
+                  <InsightCard
+                    text={`Reduza o preço do ${deadVehicles[0].brand} ${deadVehicles[0].model} — parado há ${deadVehicles[0].days} dias`}
+                    type="warning"
+                  />
+                )}
+                {stats.pendingLeads > 0 && (
+                  <InsightCard text={`${stats.pendingLeads} leads aguardando contato — responda rápido para não perder`} type="warning" />
+                )}
+                {stats.conversionRate > 0 && stats.conversionRate < 30 && (
+                  <InsightCard text="Taxa de conversão abaixo de 30% — foque em follow-ups mais rápidos" type="warning" />
+                )}
+                {stats.totalSales > 0 && stats.totalProfit > 0 && (
+                  <InsightCard text={`Lucro médio de ${fmtK(stats.totalProfit / stats.totalSales)} por veículo vendido`} type="positive" />
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Alerta de Estoque */}
           {deadVehicles.length > 0 && (
             <div className="rounded-2xl bg-destructive/5 border border-destructive/20 p-5">
               <h3 className="font-display text-sm font-semibold mb-2 flex items-center gap-2 text-destructive">
@@ -498,12 +422,7 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground mb-3">
                 {fmt(deadVehicles.reduce((s, v) => s + v.purchase_price + v.reconditioning_cost, 0))} investidos em carros que não vendem.
               </p>
-              <Button
-                size="sm"
-                variant="destructive"
-                className="w-full text-xs"
-                onClick={() => navigate("/estoque")}
-              >
+              <Button size="sm" variant="destructive" className="w-full text-xs" onClick={() => navigate("/estoque")}>
                 Resolver Agora
               </Button>
             </div>
@@ -514,22 +433,10 @@ const Dashboard = () => {
   );
 };
 
-// ---- Sub-componentes ----
+// ---- Sub-components ----
 
-const AlertBanner = ({
-  icon: Icon,
-  color,
-  title,
-  subtitle,
-  actionLabel,
-  onClick,
-}: {
-  icon: any;
-  color: "destructive" | "accent" | "primary";
-  title: string;
-  subtitle: string;
-  actionLabel: string;
-  onClick: () => void;
+const AlertBanner = ({ icon: Icon, color, title, subtitle, actionLabel, onClick }: {
+  icon: any; color: "destructive" | "accent" | "primary"; title: string; subtitle: string; actionLabel: string; onClick: () => void;
 }) => {
   const colorMap = {
     destructive: "bg-destructive/8 border-destructive/20 text-destructive",
@@ -550,42 +457,23 @@ const AlertBanner = ({
   );
 };
 
-const QuickAction = ({
-  icon: Icon,
-  label,
-  count,
-  color,
-  onClick,
-}: {
-  icon: any;
-  label: string;
-  count?: number;
-  color: "primary" | "destructive" | "accent";
-  onClick: () => void;
+const QuickAction = ({ icon: Icon, label, count, color, onClick }: {
+  icon: any; label: string; count?: number; color: "primary" | "destructive" | "accent"; onClick: () => void;
 }) => {
   const colorMap = {
     primary: "hover:border-primary/30 hover:bg-primary/5",
     destructive: "hover:border-destructive/30 hover:bg-destructive/5",
     accent: "hover:border-accent/30 hover:bg-accent/5",
   };
-  const iconColor = {
-    primary: "text-primary",
-    destructive: "text-destructive",
-    accent: "text-accent",
-  };
+  const iconColor = { primary: "text-primary", destructive: "text-destructive", accent: "text-accent" };
   return (
-    <button
-      onClick={onClick}
-      className={`rounded-xl bg-gradient-card border border-border/50 p-3.5 text-left transition-all duration-200 ${colorMap[color]} group`}
-    >
+    <button onClick={onClick} className={`rounded-xl bg-gradient-card border border-border/50 p-3.5 text-left transition-all duration-200 ${colorMap[color]} group`}>
       <div className="flex items-center gap-2">
         <Icon className={`w-4 h-4 ${iconColor[color]}`} />
         <span className="text-xs font-medium">{label}</span>
         {count !== undefined && count > 0 && (
           <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-            color === "destructive" ? "bg-destructive/15 text-destructive" :
-            color === "accent" ? "bg-accent/15 text-accent" :
-            "bg-primary/15 text-primary"
+            color === "destructive" ? "bg-destructive/15 text-destructive" : color === "accent" ? "bg-accent/15 text-accent" : "bg-primary/15 text-primary"
           }`}>{count}</span>
         )}
       </div>
@@ -602,18 +490,14 @@ const InsightCard = ({ text, type }: { text: string; type: "positive" | "warning
   </div>
 );
 
-const KPICard = ({
-  icon: Icon, label, value, change, positive, sublabel, highlight,
-}: {
+const KPICard = ({ icon: Icon, label, value, change, positive, sublabel, highlight }: {
   icon: any; label: string; value: string; change: string; positive: boolean; sublabel: string; highlight?: boolean;
 }) => (
-  <div className={`rounded-2xl bg-gradient-card border p-4 shadow-card hover:shadow-card-lg transition-all duration-300 group ${
+  <div className={`rounded-2xl bg-gradient-card border p-4 shadow-card transition-all duration-300 group ${
     highlight ? "border-primary/20 shadow-glow-sm" : "border-border/50 hover:border-border"
   }`}>
     <div className="flex items-center justify-between mb-3">
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-        highlight ? "bg-primary/12" : "bg-primary/8 group-hover:bg-primary/12"
-      }`}>
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${highlight ? "bg-primary/12" : "bg-primary/8"}`}>
         <Icon className="w-[18px] h-[18px] text-primary" />
       </div>
       <div className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
@@ -628,46 +512,30 @@ const KPICard = ({
   </div>
 );
 
-const InventoryCard = ({
-  image, brand, model, year, price, cost, days, status,
-}: {
-  image: string; brand: string; model: string; year: number; price: number; cost: number; days: number; status: "hot" | "slow" | "dead";
-}) => {
-  const glowClass = status === "dead" ? "glow-border-destructive" : status === "slow" ? "glow-border-accent" : "glow-border";
-  const dotClass = status === "dead" ? "neon-dot-red" : status === "slow" ? "neon-dot-amber" : "neon-dot";
-  const statusLabel = status === "dead" ? "Parado" : status === "slow" ? "Lento" : "Quente";
-  const profit = price - cost;
+const InventoryCard = ({ vehicle: v, fmt }: { vehicle: any; fmt: (v: number) => string }) => {
+  const profit = v.listing_price - v.purchase_price - v.reconditioning_cost;
+  const glowClass = v.status === "dead" ? "glow-border-destructive" : v.status === "slow" ? "glow-border-accent" : "glow-border";
+  const dotClass = v.status === "dead" ? "neon-dot-red" : v.status === "slow" ? "neon-dot-amber" : "neon-dot";
+  const statusLabel = v.status === "dead" ? "Parado" : v.status === "slow" ? "Lento" : "Quente";
 
   return (
-    <div className={`rounded-xl bg-gradient-card border border-border/30 overflow-hidden hover:border-border transition-all duration-300 ${glowClass}`}>
-      <div className="aspect-[4/3] overflow-hidden relative">
-        <img src={image} alt={`${brand} ${model}`} loading="lazy" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-        {status === "dead" && (
-          <div className="absolute inset-0 bg-destructive/10 flex items-center justify-center">
-            <span className="text-[9px] font-bold bg-destructive/80 text-destructive-foreground px-2 py-0.5 rounded">PERDA</span>
-          </div>
-        )}
-      </div>
-      <div className="p-2.5">
-        <p className="text-[11px] font-semibold truncate">{brand} {model}</p>
-        <p className="text-[10px] text-muted-foreground">{year}</p>
-        <div className="flex items-center justify-between mt-1.5">
-          <p className="text-xs font-bold text-primary">
-            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(price)}
-          </p>
+    <div className={`rounded-xl bg-gradient-card border border-border/30 overflow-hidden transition-all duration-300 ${glowClass}`}>
+      <div className="p-3">
+        <p className="text-[12px] font-semibold truncate">{v.brand} {v.model}</p>
+        <p className="text-[10px] text-muted-foreground">{v.year_fab}</p>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-xs font-bold text-primary">{fmt(v.listing_price)}</p>
           <div className="flex items-center gap-1">
             <div className={dotClass} />
-            <span className="text-[9px] text-muted-foreground">{days}d</span>
+            <span className="text-[9px] text-muted-foreground">{v.days}d</span>
           </div>
         </div>
         <div className="flex items-center justify-between mt-1.5">
           <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-            status === "dead" ? "bg-destructive/10 text-destructive" :
-            status === "slow" ? "bg-accent/10 text-accent" :
-            "bg-primary/10 text-primary"
+            v.status === "dead" ? "bg-destructive/10 text-destructive" : v.status === "slow" ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
           }`}>{statusLabel}</span>
           <span className={`text-[9px] font-bold ${profit >= 0 ? "text-primary" : "text-destructive"}`}>
-            {profit >= 0 ? "+" : ""}{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(profit)}
+            {profit >= 0 ? "+" : ""}{fmt(profit)}
           </span>
         </div>
       </div>
@@ -682,11 +550,7 @@ const FinanceRow = ({ label, value, positive }: { label: string; value: string; 
   </div>
 );
 
-const KPIRow = ({
-  label, value, icon: Icon, warning,
-}: {
-  label: string; value: string; icon: any; warning?: boolean;
-}) => (
+const KPIRow = ({ label, value, icon: Icon, warning }: { label: string; value: string; icon: any; warning?: boolean }) => (
   <div className="flex items-center justify-between py-2 border-b border-border/20 last:border-0">
     <div className="flex items-center gap-2">
       <Icon className={`w-3.5 h-3.5 ${warning ? "text-destructive" : "text-muted-foreground"}`} />
