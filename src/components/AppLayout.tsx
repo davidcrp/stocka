@@ -1,8 +1,8 @@
-import { ReactNode, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { ReactNode, useEffect, useRef, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  BarChart3, Car, DollarSign, LogOut, Users, Zap, Menu, X, ChevronDown,
+  BarChart3, Car, DollarSign, LogOut, Users, Zap, Menu, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -16,7 +16,15 @@ const links = [
 const AppLayout = ({ children }: { children: ReactNode }) => {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const mainRef = useRef<HTMLElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+    mainRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -29,7 +37,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
         <div className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-[240px] bg-[hsl(220,28%,6%)] flex flex-col transition-transform lg:translate-x-0 border-r border-border/50 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-[240px] bg-sidebar-background flex flex-col transition-transform lg:translate-x-0 border-r border-border/50 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="h-16 px-5 flex items-center gap-2.5 border-b border-border/30">
           <div className="w-8 h-8 rounded-xl bg-gradient-profit flex items-center justify-center shadow-glow-sm">
             <Zap className="w-4 h-4 text-primary-foreground" />
@@ -42,12 +50,16 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {links.map((link) => (
-            <NavLink key={link.to} to={link.to} onClick={() => setSidebarOpen(false)}
+            <NavLink
+              key={link.to}
+              to={link.to}
+              onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 `group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${
                   isActive ? "bg-primary/10 text-primary shadow-glow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                 }`
-              }>
+              }
+            >
               {({ isActive }) => (
                 <>
                   {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary shadow-glow-sm" />}
@@ -82,7 +94,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           </button>
           <h2 className="font-display text-sm font-semibold">Gestão da Loja</h2>
         </header>
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
+        <main ref={mainRef} className="flex-1 p-4 md:p-6 overflow-auto">
           {children}
         </main>
       </div>
