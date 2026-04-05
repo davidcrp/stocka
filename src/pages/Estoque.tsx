@@ -45,6 +45,7 @@ const emptyForm = {
 };
 
 const Estoque = () => {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("days_desc");
