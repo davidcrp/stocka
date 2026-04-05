@@ -266,11 +266,12 @@ const Dashboard = () => {
           </Card>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <QuickAction icon={Tag} label="Reduzir Preços" count={redVehicles.length + yellowVehicles.length} color="destructive" onClick={() => navigate("/estoque")} />
             <QuickAction icon={Car} label="Adicionar Veículo" color="primary" onClick={() => navigate("/estoque")} />
             <QuickAction icon={DollarSign} label="Registrar Venda" color="primary" onClick={() => navigate("/vendas")} />
-            <QuickAction icon={Target} label="Ver Ranking" color="accent" onClick={() => navigate("/estoque")} />
+            <QuickAction icon={ArrowLeftRight} label="Registrar Troca" color="accent" onClick={() => navigate("/trocas")} />
+            <QuickAction icon={Target} label="Ver Ranking" color="primary" onClick={() => navigate("/estoque")} />
           </div>
 
           {/* Revenue Chart */}
