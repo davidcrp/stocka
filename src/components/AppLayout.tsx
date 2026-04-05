@@ -6,6 +6,7 @@ import {
   BarChart3, Car, DollarSign, LogOut, Zap, Menu, X, Settings, Sun, Moon, ArrowLeftRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import MobileBottomNav from "@/components/MobileBottomNav";
 
 const links = [
   { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
@@ -102,10 +103,11 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             </Button>
           </div>
         </header>
-        <main ref={mainRef} className="flex-1 p-4 md:p-6 overflow-auto">
+        <main ref={mainRef} className="flex-1 p-4 md:p-6 pb-24 lg:pb-6 overflow-auto">
           {children}
         </main>
       </div>
+      <MobileBottomNav />
     </div>
   );
 };

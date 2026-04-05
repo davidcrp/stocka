@@ -251,26 +251,26 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 lg:space-y-8">
       {/* ───── CRITICAL ALERTS ───── */}
       {redVehicles.length > 0 && (
-        <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 p-5 cursor-pointer hover:bg-destructive/8 transition-all duration-300 group"
+        <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 p-4 lg:p-5 cursor-pointer hover:bg-destructive/8 transition-all duration-300 group"
           onClick={() => navigate("/estoque")}
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-destructive/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <ShieldAlert className="w-6 h-6 text-destructive" />
+          <div className="flex items-start lg:items-center gap-3 lg:gap-4">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-destructive/15 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <ShieldAlert className="w-5 h-5 lg:w-6 lg:h-6 text-destructive" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-base font-bold text-destructive">
-                ⚠️ {redVehicles.length} veículo{redVehicles.length > 1 ? "s" : ""} parado{redVehicles.length > 1 ? "s" : ""} há mais de 30 dias
+              <p className="text-sm lg:text-base font-bold text-destructive">
+                ⚠️ {redVehicles.length} veículo{redVehicles.length > 1 ? "s" : ""} parado{redVehicles.length > 1 ? "s" : ""} há +30 dias
               </p>
-              <p className="text-sm text-destructive/70 mt-1">
-                {fmt(stats.capitalAtRisk)} de capital em risco — cada dia parado reduz sua margem
+              <p className="text-xs lg:text-sm text-destructive/70 mt-0.5">
+                {fmt(stats.capitalAtRisk)} em risco
               </p>
             </div>
-            <Button size="sm" variant="destructive" className="shrink-0 font-bold">
-              Resolver Agora <ChevronRight className="w-4 h-4 ml-1" />
+            <Button size="sm" variant="destructive" className="shrink-0 font-bold hidden sm:flex">
+              Resolver <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
         </div>
@@ -279,10 +279,10 @@ const Dashboard = () => {
       {/* ───── HEADER ───── */}
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">Centro de Controle</h1>
-          <p className="text-sm text-muted-foreground mt-1">Decisões baseadas em dados para maximizar seu lucro</p>
+          <h1 className="font-display text-2xl lg:text-3xl font-extrabold tracking-tight">Centro de Controle</h1>
+          <p className="text-xs lg:text-sm text-muted-foreground mt-1">Decisões baseadas em dados</p>
         </div>
-        <div className="flex gap-2">
+        <div className="hidden sm:flex gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate("/estoque")}>
             <Car className="w-4 h-4 mr-1.5" /> Estoque
           </Button>
@@ -293,11 +293,10 @@ const Dashboard = () => {
       </div>
 
       {/* ───── HERO PROFIT + SECONDARY KPIs ───── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Hero Profit Card - dominant */}
-        <Card className="lg:col-span-5 p-7 bg-gradient-to-br from-primary/12 via-primary/5 to-transparent border-primary/25 relative overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5">
+        {/* Hero Profit Card */}
+        <Card className="lg:col-span-5 p-5 lg:p-7 bg-gradient-to-br from-primary/12 via-primary/5 to-transparent border-primary/25 relative overflow-hidden">
           <div className="absolute -top-16 -right-16 w-48 h-48 bg-primary/8 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl" />
           <div className="relative">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
@@ -305,7 +304,7 @@ const Dashboard = () => {
               </div>
               <span className="text-xs font-bold text-primary uppercase tracking-widest">Lucro Mensal</span>
             </div>
-            <p className="font-display text-5xl font-black tracking-tighter mt-3">
+            <p className="font-display text-4xl lg:text-5xl font-black tracking-tighter mt-3">
               {fmt(stats.thisMonthProfit)}
             </p>
             <div className="flex items-center gap-3 mt-3">
@@ -315,70 +314,68 @@ const Dashboard = () => {
                 {profitPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                 {profitChangeNum >= 0 ? "+" : ""}{profitChangeNum.toFixed(1)}%
               </div>
-              <span className="text-sm text-muted-foreground">vs mês anterior</span>
+              <span className="text-xs lg:text-sm text-muted-foreground">vs mês anterior</span>
             </div>
-            <div className="mt-6 pt-5 border-t border-primary/15 grid grid-cols-3 gap-4">
+            <div className="mt-5 pt-4 border-t border-primary/15 grid grid-cols-3 gap-3">
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Vendas</p>
-                <p className="font-display text-2xl font-black mt-1">{stats.thisMonthSales}</p>
+                <p className="font-display text-xl lg:text-2xl font-black mt-1">{stats.thisMonthSales}</p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Lucro/Carro</p>
-                <p className="font-display text-2xl font-black text-primary mt-1">{fmtK(stats.profitPerCar)}</p>
+                <p className="font-display text-xl lg:text-2xl font-black text-primary mt-1">{fmtK(stats.profitPerCar)}</p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Trocas</p>
-                <p className="font-display text-2xl font-black mt-1">{stats.tradesCount}</p>
+                <p className="font-display text-xl lg:text-2xl font-black mt-1">{stats.tradesCount}</p>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* KPI Grid - 4 cards */}
-        <div className="lg:col-span-7 grid grid-cols-2 gap-4">
+        {/* KPI Grid */}
+        <div className="lg:col-span-7 grid grid-cols-2 gap-3 lg:gap-4">
           <KPICard
             icon={Wallet} label="Capital Investido" value={fmtK(stats.totalInvested)}
-            sublabel={`${stats.inStock} veículo${stats.inStock !== 1 ? "s" : ""} em estoque`}
-            detail={`Custo médio: ${stats.inStock > 0 ? fmtK(stats.totalInvested / stats.inStock) : "—"}`}
+            sublabel={`${stats.inStock} veículo${stats.inStock !== 1 ? "s" : ""}`}
+            detail={`Médio: ${stats.inStock > 0 ? fmtK(stats.totalInvested / stats.inStock) : "—"}`}
           />
           <KPICard
             icon={Target} label="Lucro Potencial" value={fmtK(stats.totalProfitPotential)}
-            sublabel={`Estoque vale ${fmtK(stats.totalInventoryValue)}`}
+            sublabel={`Estoque: ${fmtK(stats.totalInventoryValue)}`}
             highlight={stats.totalProfitPotential > 0}
-            detail={`Margem média: ${stats.avgMargin.toFixed(0)}%`}
+            detail={`Margem: ${stats.avgMargin.toFixed(0)}%`}
           />
           <KPICard
             icon={Timer} label="Dias p/ Vender"
             value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}d` : "—"}
-            sublabel={stats.avgDaysToSell > 30 ? "⚠️ Acima do ideal (30d)" : "✅ Dentro do saudável"}
+            sublabel={stats.avgDaysToSell > 30 ? "⚠️ Acima do ideal" : "✅ Saudável"}
             warning={stats.avgDaysToSell > 30}
-            detail={stats.capitalAtRisk > 0 ? `${fmtK(stats.capitalAtRisk)} em risco` : "Sem capital em risco"}
+            detail={stats.capitalAtRisk > 0 ? `${fmtK(stats.capitalAtRisk)} em risco` : "Sem risco"}
           />
           <KPICard
             icon={Activity} label="Performance"
             value={stats.avgMargin > 0 ? `${stats.avgMargin.toFixed(0)}%` : "—"}
-            sublabel={stats.avgMargin >= 20 ? "Margem excelente" : stats.avgMargin >= 10 ? "Margem moderada" : "Margem baixa"}
+            sublabel={stats.avgMargin >= 20 ? "Excelente" : stats.avgMargin >= 10 ? "Moderada" : "Baixa"}
             warning={stats.avgMargin > 0 && stats.avgMargin < 10}
             highlight={stats.avgMargin >= 20}
-            detail={`${stats.totalSales} vendas totais`}
+            detail={`${stats.totalSales} vendas`}
           />
         </div>
       </div>
 
-      {/* ───── INVENTORY HEALTH BAR + QUICK ACTIONS ───── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        {/* Inventory Health - wider */}
-        <Card className="lg:col-span-3 p-6 border-border/50">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-display text-base font-bold flex items-center gap-2">
-              <Gauge className="w-5 h-5 text-primary" /> Saúde do Estoque
+      {/* ───── INVENTORY HEALTH + QUICK ACTIONS ───── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-5">
+        <Card className="lg:col-span-3 p-5 lg:p-6 border-border/50">
+          <div className="flex items-center justify-between mb-4 lg:mb-5">
+            <h2 className="font-display text-sm lg:text-base font-bold flex items-center gap-2">
+              <Gauge className="w-4 h-4 lg:w-5 lg:h-5 text-primary" /> Saúde do Estoque
             </h2>
             <span className="text-xs text-muted-foreground">{stats.inStock} veículo{stats.inStock !== 1 ? "s" : ""}</span>
           </div>
           {stats.inStock > 0 ? (
-            <div className="space-y-5">
-              {/* Progress bar */}
-              <div className="flex rounded-2xl overflow-hidden h-10 shadow-inner">
+            <div className="space-y-4 lg:space-y-5">
+              <div className="flex rounded-2xl overflow-hidden h-8 lg:h-10 shadow-inner">
                 {stats.greenCount > 0 && (
                   <div className="bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground transition-all duration-500"
                     style={{ width: `${Math.max((stats.greenCount / stats.inStock) * 100, 8)}%` }}>
@@ -398,17 +395,17 @@ const Dashboard = () => {
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-3 lg:gap-4">
                 <HealthStat
-                  color="bg-primary" label="Saudável" subtitle="< 15 dias"
+                  color="bg-primary" label="Saudável" subtitle="< 15d"
                   count={stats.greenCount} icon={<CheckCircle2 className="w-4 h-4 text-primary" />}
                 />
                 <HealthStat
-                  color="bg-amber-500" label="Atenção" subtitle="15-30 dias"
+                  color="bg-amber-500" label="Atenção" subtitle="15-30d"
                   count={stats.yellowCount} icon={<AlertTriangle className="w-4 h-4 text-amber-500" />}
                 />
                 <HealthStat
-                  color="bg-destructive" label="Crítico" subtitle="30+ dias"
+                  color="bg-destructive" label="Crítico" subtitle="30d+"
                   count={stats.redCount} icon={<Flame className="w-4 h-4 text-destructive" />}
                 />
               </div>
@@ -418,8 +415,8 @@ const Dashboard = () => {
           )}
         </Card>
 
-        {/* Quick Actions */}
-        <Card className="lg:col-span-2 p-6 border-border/50">
+        {/* Quick Actions - hidden on mobile (bottom nav replaces it) */}
+        <Card className="lg:col-span-2 p-5 lg:p-6 border-border/50 hidden lg:block">
           <h2 className="font-display text-base font-bold mb-5 flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" /> Ações Rápidas
           </h2>
@@ -437,16 +434,16 @@ const Dashboard = () => {
       {/* ───── VEHICLES NEEDING ACTION ───── */}
       {(redVehicles.length > 0 || yellowVehicles.length > 0) && (
         <div>
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-4 lg:mb-5">
             <div>
-              <h2 className="font-display text-xl font-extrabold tracking-tight">🚨 Precisam de Ação</h2>
-              <p className="text-sm text-muted-foreground mt-1">Estes veículos estão reduzindo seu lucro — aja agora</p>
+              <h2 className="font-display text-lg lg:text-xl font-extrabold tracking-tight">🚨 Precisam de Ação</h2>
+              <p className="text-xs lg:text-sm text-muted-foreground mt-1">Aja agora para proteger seu lucro</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate("/estoque")}>
+            <Button variant="outline" size="sm" onClick={() => navigate("/estoque")} className="hidden sm:flex">
               Ver todos <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
             </Button>
           </div>
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
             {[...redVehicles, ...yellowVehicles].slice(0, 6).map((v) => (
               <VehicleActionCard
                 key={v.id} vehicle={v} fmt={fmt} navigate={navigate}
@@ -461,16 +458,16 @@ const Dashboard = () => {
       {/* ───── HIGH DEMAND VEHICLES ───── */}
       {greenVehicles.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-4 lg:mb-5">
             <div>
-              <h2 className="font-display text-xl font-extrabold tracking-tight">🟢 Alta Demanda</h2>
-              <p className="text-sm text-muted-foreground mt-1">Veículos com boa margem e giro rápido</p>
+              <h2 className="font-display text-lg lg:text-xl font-extrabold tracking-tight">🟢 Alta Demanda</h2>
+              <p className="text-xs lg:text-sm text-muted-foreground mt-1">Giro rápido e boa margem</p>
             </div>
           </div>
-          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 lg:gap-4">
             {greenVehicles.slice(0, 4).map((v) => (
               <Card key={v.id}
-                className="p-4 border-primary/15 hover:border-primary/30 cursor-pointer transition-all duration-300 hover:shadow-lg group"
+                className="p-3 lg:p-4 border-primary/15 hover:border-primary/30 cursor-pointer transition-all duration-300 hover:shadow-lg group"
                 onClick={() => navigate(`/estoque/${v.id}`)}
               >
                 {v.photos && v.photos.length > 0 ? (
@@ -486,7 +483,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between mt-2">
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Lucro</p>
-                    <p className="font-display text-lg font-black text-primary">+{fmt(v.profit)}</p>
+                    <p className="font-display text-base lg:text-lg font-black text-primary">+{fmt(v.profit)}</p>
                   </div>
                   <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">{v.days}d • {v.margin.toFixed(0)}%</Badge>
                 </div>
@@ -497,15 +494,14 @@ const Dashboard = () => {
       )}
 
       {/* ───── CHART + INSIGHTS SIDEBAR ───── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        {/* Revenue Chart */}
-        <Card className="xl:col-span-2 p-6 border-border/50">
-          <div className="flex items-center justify-between mb-5">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-5">
+        <Card className="xl:col-span-2 p-4 lg:p-6 border-border/50">
+          <div className="flex items-center justify-between mb-4 lg:mb-5">
             <div>
-              <h2 className="font-display text-lg font-bold">Faturamento e Lucro</h2>
-              <p className="text-xs text-muted-foreground mt-1">Últimos 12 meses</p>
+              <h2 className="font-display text-base lg:text-lg font-bold">Faturamento e Lucro</h2>
+              <p className="text-[10px] lg:text-xs text-muted-foreground mt-1">Últimos 12 meses</p>
             </div>
-            <div className="flex items-center gap-5 text-xs">
+            <div className="hidden sm:flex items-center gap-5 text-xs">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-primary/30" />
                 <span className="text-muted-foreground">Faturamento</span>
@@ -769,7 +765,7 @@ const ChartContent = ({ chartData, fmt }: { chartData: { month: string; revenue:
   const primaryFaded = primaryColor ? `hsl(${primaryColor} / 0.4)` : "hsl(142 71% 45% / 0.4)";
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={250}>
       <AreaChart data={chartData}>
         <defs>
           <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
@@ -827,17 +823,17 @@ const InsightCard = ({ icon: Icon, text, type, action, onAction }: {
 const KPICard = ({ icon: Icon, value, sublabel, highlight, warning, detail }: {
   icon: any; label: string; value: string; sublabel: string; highlight?: boolean; warning?: boolean; detail?: string;
 }) => (
-  <Card className={`p-5 border transition-all duration-300 hover:shadow-lg group ${
+  <Card className={`p-4 lg:p-5 border transition-all duration-300 hover:shadow-lg group ${
     highlight ? "border-primary/25 hover:border-primary/40" : warning ? "border-destructive/25 hover:border-destructive/40" : "border-border/50 hover:border-border"
   }`}>
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-105 ${
+    <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center mb-2 lg:mb-3 transition-transform group-hover:scale-105 ${
       warning ? "bg-destructive/10" : "bg-primary/8"
     }`}>
-      <Icon className={`w-5 h-5 ${warning ? "text-destructive" : "text-primary"}`} />
+      <Icon className={`w-4 h-4 lg:w-5 lg:h-5 ${warning ? "text-destructive" : "text-primary"}`} />
     </div>
-    <p className={`font-display text-2xl font-black tracking-tight ${highlight ? "text-primary" : warning ? "text-destructive" : ""}`}>{value}</p>
-    <p className="text-xs text-muted-foreground mt-1.5">{sublabel}</p>
-    {detail && <p className="text-[10px] text-muted-foreground/70 mt-1">{detail}</p>}
+    <p className={`font-display text-xl lg:text-2xl font-black tracking-tight ${highlight ? "text-primary" : warning ? "text-destructive" : ""}`}>{value}</p>
+    <p className="text-[10px] lg:text-xs text-muted-foreground mt-1">{sublabel}</p>
+    {detail && <p className="text-[10px] text-muted-foreground/70 mt-0.5 lg:mt-1">{detail}</p>}
   </Card>
 );
 
