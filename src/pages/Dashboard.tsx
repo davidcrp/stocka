@@ -434,6 +434,43 @@ const QuickAction = ({ icon: Icon, label, count, color, onClick }: {
   );
 };
 
+const ChartContent = ({ chartData, fmt }: { chartData: { month: string; revenue: number; profit: number }[]; fmt: (v: number) => string }) => {
+  const isDark = document.documentElement.classList.contains("dark");
+  const gridColor = isDark ? "hsl(220 16% 14%)" : "hsl(220 13% 91%)";
+  const tickColor = isDark ? "hsl(220 9% 50%)" : "hsl(220 9% 46%)";
+  const tooltipBg = isDark ? "hsl(220 26% 8%)" : "hsl(0 0% 100%)";
+  const tooltipBorder = isDark ? "hsl(220 16% 16%)" : "hsl(220 13% 91%)";
+  const primaryColor = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim();
+  const primary = primaryColor ? `hsl(${primaryColor})` : "hsl(142 71% 45%)";
+  const primaryFaded = primaryColor ? `hsl(${primaryColor} / 0.4)` : "hsl(142 71% 45% / 0.4)";
+
+  return (
+    <ResponsiveContainer width="100%" height={280}>
+      <AreaChart data={chartData}>
+        <defs>
+          <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={primary} stopOpacity={0.15} />
+            <stop offset="95%" stopColor={primary} stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={primary} stopOpacity={0.4} />
+            <stop offset="95%" stopColor={primary} stopOpacity={0.05} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+        <XAxis dataKey="month" stroke={tickColor} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} />
+        <YAxis stroke={tickColor} tick={{ fontSize: 11, fill: tickColor }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+        <Tooltip
+          contentStyle={{ background: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: "12px", fontSize: "12px" }}
+          formatter={(value: number) => [fmt(value), ""]}
+        />
+        <Area type="monotone" dataKey="revenue" stroke={primaryFaded} strokeWidth={2} fill="url(#revenueGradient)" name="Faturamento" />
+        <Area type="monotone" dataKey="profit" stroke={primary} strokeWidth={2.5} fill="url(#profitGradient)" name="Lucro" />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+};
+
 const InsightCard = ({ text, type }: { text: string; type: "positive" | "warning" }) => (
   <div className={`rounded-lg p-2.5 text-[11px] leading-relaxed ${
     type === "positive" ? "bg-primary/5 text-primary/90 border border-primary/10" : "bg-accent/5 text-accent/90 border border-accent/10"
