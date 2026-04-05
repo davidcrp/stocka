@@ -495,7 +495,7 @@ const InsightCard = ({ text, type }: { text: string; type: "positive" | "warning
 const KPICard = ({ icon: Icon, value, change, positive, sublabel, highlight, warning }: {
   icon: any; label: string; value: string; change?: string; positive?: boolean; sublabel: string; highlight?: boolean; warning?: boolean;
 }) => (
-  <div className={`rounded-2xl bg-gradient-card border p-4 shadow-card transition-all duration-300 ${
+  <div className={`rounded-2xl bg-gradient-card border p-5 shadow-card transition-all duration-300 hover:shadow-card-lg ${
     highlight ? "border-primary/20 shadow-glow-sm" : warning ? "border-destructive/20" : "border-border/50 hover:border-border"
   }`}>
     <div className="flex items-center justify-between mb-3">
@@ -511,8 +511,8 @@ const KPICard = ({ icon: Icon, value, change, positive, sublabel, highlight, war
         </div>
       )}
     </div>
-    <p className={`font-display text-2xl font-bold tracking-tight ${highlight ? "text-gradient-profit" : warning ? "text-destructive" : ""}`}>{value}</p>
-    <p className="text-[11px] text-muted-foreground mt-1">{sublabel}</p>
+    <p className={`font-display text-2xl font-extrabold tracking-tight ${highlight ? "text-gradient-profit" : warning ? "text-destructive" : ""}`}>{value}</p>
+    <p className="text-[11px] text-muted-foreground mt-1.5">{sublabel}</p>
   </div>
 );
 
