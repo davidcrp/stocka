@@ -7,31 +7,18 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  DollarSign,
-  TrendingUp,
-  Calendar,
-  Plus,
-  Car,
-  Users,
-  Target,
-  ArrowUpRight,
-  Zap,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  DollarSign, TrendingUp, Calendar, Plus, Car, Users, Target, Zap, Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,6 +41,7 @@ type Lead = { id: string; name: string };
 
 const Vendas = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -71,29 +59,41 @@ const Vendas = () => {
   const { data: salesData, isLoading: loading } = useQuery({
     queryKey: ["vendas-data"],
     queryFn: async () => {
-      const [salesRes, vehiclesRes, leadsRes] = await Promise.all([
+      const [salesRes, vehiclesRes, leadsRes, expensesRes] = await Promise.all([
         supabase.from("sales").select("*, vehicles(brand, model, year_fab, purchase_price, reconditioning_cost), leads(name)").order("sale_date", { ascending: false }),
         supabase.from("vehicles").select("id, brand, model, year_fab, purchase_price, reconditioning_cost, listing_price").eq("status", "em_estoque"),
         supabase.from("leads").select("id, name"),
+        supabase.from("vehicle_expenses").select("vehicle_id, amount"),
       ]);
+      const expensesByVehicle: Record<string, number> = {};
+      (expensesRes.data || []).forEach((e: any) => {
+        expensesByVehicle[e.vehicle_id] = (expensesByVehicle[e.vehicle_id] || 0) + (e.amount || 0);
+      });
       return {
         sales: (salesRes.data as any[]) || [],
         vehicles: (vehiclesRes.data as Vehicle[]) || [],
         leads: (leadsRes.data as Lead[]) || [],
+        expensesByVehicle,
       };
     },
-    staleTime: 30_000,
+    staleTime: 15_000,
   });
 
   const sales = salesData?.sales || [];
   const vehicles = salesData?.vehicles || [];
   const leads = salesData?.leads || [];
+  const expensesByVehicle = salesData?.expensesByVehicle || {};
 
-  const fetchAll = () => queryClient.invalidateQueries({ queryKey: ["vendas-data"] });
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["vendas-data"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    queryClient.invalidateQueries({ queryKey: ["leads"] });
+  };
 
   const selectedVehicle = vehicles.find((v) => v.id === form.vehicle_id);
   const estimatedCost = selectedVehicle
-    ? (selectedVehicle.purchase_price || 0) + (selectedVehicle.reconditioning_cost || 0)
+    ? (selectedVehicle.purchase_price || 0) + (selectedVehicle.reconditioning_cost || 0) + (expensesByVehicle[form.vehicle_id] || 0)
     : 0;
   const estimatedProfit = form.final_price - estimatedCost - form.commission;
 
@@ -103,6 +103,11 @@ const Vendas = () => {
       toast({ title: "Selecione um veículo", variant: "destructive" });
       return;
     }
+    if (form.final_price <= 0) {
+      toast({ title: "Informe o preço de venda", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
 
     const { error } = await supabase.from("sales").insert({
       vehicle_id: form.vehicle_id,
@@ -116,32 +121,60 @@ const Vendas = () => {
 
     if (error) {
       toast({ title: "Erro ao registrar venda", description: error.message, variant: "destructive" });
+      setSubmitting(false);
       return;
     }
 
-    // Update vehicle status
-    await supabase.from("vehicles").update({ status: "vendido" as const, sale_date: new Date().toISOString().split("T")[0], final_sale_price: form.final_price }).eq("id", form.vehicle_id);
+    await supabase.from("vehicles").update({
+      status: "vendido" as const,
+      sale_date: new Date().toISOString().split("T")[0],
+      final_sale_price: form.final_price,
+    }).eq("id", form.vehicle_id);
 
-    // Update lead status if linked
     if (form.lead_id) {
       await supabase.from("leads").update({ status: "fechado" as const }).eq("id", form.lead_id);
     }
 
     toast({ title: "Venda registrada com sucesso! 🎉" });
+    setSubmitting(false);
     setDialogOpen(false);
     setForm({ vehicle_id: "", lead_id: "", final_price: 0, commission: 0, payment_method: "dinheiro", notes: "" });
-    fetchAll();
+    invalidateAll();
+  };
+
+  const handleDeleteSale = async (sale: Sale) => {
+    // Revert vehicle status
+    await supabase.from("vehicles").update({
+      status: "em_estoque" as const,
+      sale_date: null,
+      final_sale_price: null,
+    }).eq("id", sale.vehicle_id);
+
+    // Revert lead status if linked
+    if (sale.lead_id) {
+      await supabase.from("leads").update({ status: "negociando" as const }).eq("id", sale.lead_id);
+    }
+
+    const { error } = await supabase.from("sales").delete().eq("id", sale.id);
+    if (error) {
+      toast({ title: "Erro ao excluir venda", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Venda excluída e veículo retornou ao estoque" });
+      invalidateAll();
+    }
   };
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-  const totalRevenue = sales.reduce((s, sale) => s + (sale.final_price || 0), 0);
-  const totalProfit = sales.reduce((s, sale) => {
+  const calcProfit = (sale: Sale) => {
     const v = sale.vehicles;
-    const cost = (v?.purchase_price || 0) + (v?.reconditioning_cost || 0);
-    return s + (sale.final_price || 0) - cost - (sale.commission || 0);
-  }, 0);
+    const cost = (v?.purchase_price || 0) + (v?.reconditioning_cost || 0) + (expensesByVehicle[sale.vehicle_id] || 0);
+    return (sale.final_price || 0) - cost - (sale.commission || 0);
+  };
+
+  const totalRevenue = sales.reduce((s: number, sale: Sale) => s + (sale.final_price || 0), 0);
+  const totalProfit = sales.reduce((s: number, sale: Sale) => s + calcProfit(sale), 0);
   const avgTicket = sales.length ? totalRevenue / sales.length : 0;
   const avgProfit = sales.length ? totalProfit / sales.length : 0;
 
@@ -173,6 +206,9 @@ const Vendas = () => {
                 }}>
                   <SelectTrigger><SelectValue placeholder="Selecione o veículo" /></SelectTrigger>
                   <SelectContent>
+                    {vehicles.length === 0 && (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum veículo em estoque</div>
+                    )}
                     {vehicles.map((v) => (
                       <SelectItem key={v.id} value={v.id}>{v.brand} {v.model} {v.year_fab}</SelectItem>
                     ))}
@@ -224,7 +260,7 @@ const Vendas = () => {
                 <div className="rounded-xl bg-secondary/30 border border-border/50 p-4 space-y-2">
                   <h4 className="text-xs font-semibold text-muted-foreground">PRÉVIA DO LUCRO</h4>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Custo total</span>
+                    <span className="text-muted-foreground">Custo total (compra + recond. + despesas)</span>
                     <span>{formatCurrency(estimatedCost)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -244,8 +280,8 @@ const Vendas = () => {
                 </div>
               )}
 
-              <Button type="submit" className="w-full bg-gradient-profit text-primary-foreground font-semibold shadow-glow">
-                Confirmar Venda
+              <Button type="submit" className="w-full bg-gradient-profit text-primary-foreground font-semibold shadow-glow" disabled={submitting}>
+                {submitting ? "Registrando..." : "Confirmar Venda"}
               </Button>
             </form>
           </DialogContent>
@@ -293,50 +329,29 @@ const Vendas = () => {
       </div>
 
       {sales.length === 0 ? (
-        /* Empty State com Propósito */
         <div className="rounded-2xl bg-gradient-card border border-border/50 p-12 text-center shadow-card">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 shadow-glow-sm">
             <DollarSign className="w-8 h-8 text-primary" />
           </div>
           <h2 className="font-display text-xl font-bold mb-2">Comece a Lucrar</h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-            Registre sua primeira venda para acompanhar lucro por veículo, performance dos vendedores e tendências do mercado.
+            Registre sua primeira venda para acompanhar lucro por veículo, performance dos vendedores e tendências.
           </p>
           <div className="flex items-center justify-center gap-3">
-            <Button
-              className="bg-gradient-profit text-primary-foreground font-semibold shadow-glow"
-              onClick={() => setDialogOpen(true)}
-            >
+            <Button className="bg-gradient-profit text-primary-foreground font-semibold shadow-glow" onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" /> Registrar Primeira Venda
             </Button>
             <Button variant="outline" onClick={() => navigate("/estoque")}>
               <Car className="w-4 h-4 mr-2" /> Adicionar Veículo
             </Button>
           </div>
-
-          {/* Mini Funnel Preview */}
-          <div className="mt-8 grid grid-cols-4 gap-3 max-w-lg mx-auto">
-            {[
-              { icon: Users, label: "Leads", count: "→" },
-              { icon: Target, label: "Negociação", count: "→" },
-              { icon: DollarSign, label: "Fechamento", count: "→" },
-              { icon: TrendingUp, label: "Lucro", count: "💰" },
-            ].map((step, i) => (
-              <div key={i} className="rounded-xl bg-secondary/30 border border-border/30 p-3 text-center">
-                <step.icon className="w-5 h-5 text-primary mx-auto mb-1" />
-                <p className="text-[10px] text-muted-foreground">{step.label}</p>
-              </div>
-            ))}
-          </div>
         </div>
       ) : (
-        /* Sales List */
         <div className="space-y-3">
-          {sales.map((sale) => {
-            const v = sale.vehicles;
-            const cost = (v?.purchase_price || 0) + (v?.reconditioning_cost || 0);
-            const profit = (sale.final_price || 0) - cost - (sale.commission || 0);
+          {sales.map((sale: Sale) => {
+            const profit = calcProfit(sale);
             const margin = sale.final_price > 0 ? (profit / sale.final_price) * 100 : 0;
+            const v = sale.vehicles;
             return (
               <Card key={sale.id} className="p-4 bg-gradient-card border-border/50 shadow-card hover:border-border transition-all">
                 <div className="flex items-center justify-between">
@@ -348,18 +363,39 @@ const Vendas = () => {
                       {sale.payment_method && <Badge variant="outline" className="text-xs">{sale.payment_method}</Badge>}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-display font-bold text-lg">{formatCurrency(sale.final_price)}</p>
-                    <div className="flex items-center gap-2 justify-end">
-                      <p className={`text-sm font-semibold ${profit >= 0 ? "text-primary" : "text-destructive"}`}>
-                        {profit >= 0 ? "+" : ""}{formatCurrency(profit)}
-                      </p>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                        margin >= 20 ? "bg-primary/10 text-primary" : margin >= 10 ? "bg-accent/10 text-accent" : "bg-destructive/10 text-destructive"
-                      }`}>
-                        {margin.toFixed(0)}%
-                      </span>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="font-display font-bold text-lg">{formatCurrency(sale.final_price)}</p>
+                      <div className="flex items-center gap-2 justify-end">
+                        <p className={`text-sm font-semibold ${profit >= 0 ? "text-primary" : "text-destructive"}`}>
+                          {profit >= 0 ? "+" : ""}{formatCurrency(profit)}
+                        </p>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                          margin >= 20 ? "bg-primary/10 text-primary" : margin >= 10 ? "bg-accent/10 text-accent" : "bg-destructive/10 text-destructive"
+                        }`}>
+                          {margin.toFixed(0)}%
+                        </span>
+                      </div>
                     </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-card border-border">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir venda?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            A venda do {v?.brand} {v?.model} será excluída e o veículo retornará ao estoque.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteSale(sale)} className="bg-destructive text-destructive-foreground">Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </Card>

@@ -16,124 +16,140 @@ import { Progress } from "@/components/ui/progress";
 
 type Stats = {
   inStock: number;
+  activeLeads: number;
   totalLeads: number;
   newLeads: number;
   pendingLeads: number;
   totalSales: number;
   totalRevenue: number;
   totalProfit: number;
+  thisMonthProfit: number;
+  thisMonthSales: number;
   avgDaysToSell: number;
   conversionRate: number;
   lostLeadsThisWeek: number;
   prevMonthProfit: number;
   prevMonthSales: number;
+  totalInvested: number;
   agingVehicles: {
     id: string; brand: string; model: string; year_fab: number;
     days: number; listing_price: number; purchase_price: number;
-    reconditioning_cost: number; status: string;
+    reconditioning_cost: number; dailyCost: number; status: string;
   }[];
   funnelData: { name: string; value: number }[];
   chartData: { month: string; revenue: number; profit: number }[];
 };
 
 const fetchDashboardStats = async (): Promise<Stats> => {
-    const [vehiclesRes, leadsRes, salesRes, expensesRes] = await Promise.all([
-      supabase.from("vehicles").select("*"),
-      supabase.from("leads").select("*"),
-      supabase.from("sales").select("*, vehicles(purchase_price, reconditioning_cost)"),
-      supabase.from("vehicle_expenses").select("vehicle_id, amount"),
-    ]);
+  const [vehiclesRes, leadsRes, salesRes, expensesRes] = await Promise.all([
+    supabase.from("vehicles").select("*"),
+    supabase.from("leads").select("*"),
+    supabase.from("sales").select("*, vehicles(purchase_price, reconditioning_cost)"),
+    supabase.from("vehicle_expenses").select("vehicle_id, amount"),
+  ]);
 
-    const vehicles = vehiclesRes.data || [];
-    const leads = leadsRes.data || [];
-    const sales = salesRes.data || [];
-    const expenses = expensesRes.data || [];
+  const vehicles = vehiclesRes.data || [];
+  const leads = leadsRes.data || [];
+  const sales = salesRes.data || [];
+  const expenses = expensesRes.data || [];
 
-    const inStock = vehicles.filter((v) => v.status === "em_estoque");
-    const newLeads = leads.filter((l) => l.status === "novo");
-    const pendingLeads = leads.filter((l) => l.status === "novo" || l.status === "contactado");
-    const totalRevenue = sales.reduce((s, sale) => s + (sale.final_price || 0), 0);
+  const inStock = vehicles.filter((v) => v.status === "em_estoque");
+  const activeLeads = leads.filter((l) => l.status !== "fechado" && l.status !== "perdido");
+  const newLeads = leads.filter((l) => l.status === "novo");
+  const pendingLeads = leads.filter((l) => l.status === "novo" || l.status === "contactado");
+  const totalRevenue = sales.reduce((s, sale) => s + (sale.final_price || 0), 0);
 
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const lostLeadsThisWeek = leads.filter(
-      (l) => l.status === "perdido" && new Date(l.updated_at) >= oneWeekAgo
-    ).length;
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const lostLeadsThisWeek = leads.filter(
+    (l) => l.status === "perdido" && new Date(l.updated_at) >= oneWeekAgo
+  ).length;
 
-    const expensesByVehicle: Record<string, number> = {};
-    expenses.forEach((e) => {
-      expensesByVehicle[e.vehicle_id] = (expensesByVehicle[e.vehicle_id] || 0) + (e.amount || 0);
-    });
+  const expensesByVehicle: Record<string, number> = {};
+  expenses.forEach((e) => {
+    expensesByVehicle[e.vehicle_id] = (expensesByVehicle[e.vehicle_id] || 0) + (e.amount || 0);
+  });
 
-    const calcProfit = (sale: any) => {
-      const v = sale.vehicles as any;
-      const cost = (v?.purchase_price || 0) + (v?.reconditioning_cost || 0) + (expensesByVehicle[sale.vehicle_id] || 0);
-      return (sale.final_price || 0) - cost - (sale.commission || 0);
-    };
+  const calcProfit = (sale: any) => {
+    const v = sale.vehicles as any;
+    const cost = (v?.purchase_price || 0) + (v?.reconditioning_cost || 0) + (expensesByVehicle[sale.vehicle_id] || 0);
+    return (sale.final_price || 0) - cost - (sale.commission || 0);
+  };
 
-    const totalProfit = sales.reduce((s, sale) => s + calcProfit(sale), 0);
+  const totalProfit = sales.reduce((s, sale) => s + calcProfit(sale), 0);
 
-    // Previous month calculations
-    const now = new Date();
-    const thisMonthStart = startOfMonth(now);
-    const prevMonthStart = startOfMonth(subMonths(now, 1));
-    const prevMonthSales = sales.filter((s) => {
+  const now = new Date();
+  const thisMonthStart = startOfMonth(now);
+  const prevMonthStart = startOfMonth(subMonths(now, 1));
+
+  const thisMonthSalesArr = sales.filter((s) => new Date(s.sale_date) >= thisMonthStart);
+  const prevMonthSalesArr = sales.filter((s) => {
+    const d = new Date(s.sale_date);
+    return d >= prevMonthStart && d < thisMonthStart;
+  });
+
+  const thisMonthProfit = thisMonthSalesArr.reduce((s, sale) => s + calcProfit(sale), 0);
+  const prevMonthProfit = prevMonthSalesArr.reduce((s, sale) => s + calcProfit(sale), 0);
+
+  // Chart: real monthly data (last 12 months)
+  const chartData: { month: string; revenue: number; profit: number }[] = [];
+  for (let i = 11; i >= 0; i--) {
+    const monthStart = startOfMonth(subMonths(now, i));
+    const monthEnd = startOfMonth(subMonths(now, i - 1));
+    const monthSales = sales.filter((s) => {
       const d = new Date(s.sale_date);
-      return d >= prevMonthStart && d < thisMonthStart;
+      return d >= monthStart && d < monthEnd;
     });
-    const prevMonthProfit = prevMonthSales.reduce((s, sale) => s + calcProfit(sale), 0);
+    chartData.push({
+      month: format(monthStart, "MMM", { locale: ptBR }),
+      revenue: monthSales.reduce((s, sale) => s + (sale.final_price || 0), 0),
+      profit: monthSales.reduce((s, sale) => s + calcProfit(sale), 0),
+    });
+  }
 
-    // Chart: real monthly data (last 12 months)
-    const chartData: { month: string; revenue: number; profit: number }[] = [];
-    for (let i = 11; i >= 0; i--) {
-      const monthStart = startOfMonth(subMonths(now, i));
-      const monthEnd = startOfMonth(subMonths(now, i - 1));
-      const monthSales = sales.filter((s) => {
-        const d = new Date(s.sale_date);
-        return d >= monthStart && d < monthEnd;
-      });
-      chartData.push({
-        month: format(monthStart, "MMM", { locale: ptBR }),
-        revenue: monthSales.reduce((s, sale) => s + (sale.final_price || 0), 0),
-        profit: monthSales.reduce((s, sale) => s + calcProfit(sale), 0),
-      });
-    }
+  const soldVehicles = vehicles.filter((v) => v.status === "vendido" && v.entry_date && v.sale_date);
+  const avgDays = soldVehicles.length > 0
+    ? soldVehicles.reduce((s, v) => s + differenceInDays(new Date(v.sale_date!), new Date(v.entry_date)), 0) / soldVehicles.length
+    : 0;
 
-    const soldVehicles = vehicles.filter((v) => v.status === "vendido" && v.entry_date && v.sale_date);
-    const avgDays = soldVehicles.length > 0
-      ? soldVehicles.reduce((s, v) => s + differenceInDays(new Date(v.sale_date!), new Date(v.entry_date)), 0) / soldVehicles.length
-      : 0;
+  const closedLeads = leads.filter((l) => l.status === "fechado").length;
+  const negotiatingLeads = leads.filter((l) => l.status === "negociando").length;
+  const contactedLeads = leads.filter((l) => l.status === "contactado").length;
+  const conversionRate = leads.length > 0 ? (closedLeads / leads.length) * 100 : 0;
 
-    const closedLeads = leads.filter((l) => l.status === "fechado").length;
-    const negotiatingLeads = leads.filter((l) => l.status === "negociando").length;
-    const contactedLeads = leads.filter((l) => l.status === "contactado").length;
-    const conversionRate = leads.length > 0 ? (closedLeads / leads.length) * 100 : 0;
+  const funnelData = [
+    { name: "Novos", value: newLeads.length },
+    { name: "Contactados", value: contactedLeads },
+    { name: "Negociando", value: negotiatingLeads },
+    { name: "Fechados", value: closedLeads },
+  ];
 
-    const funnelData = [
-      { name: "Novos", value: newLeads.length },
-      { name: "Contactados", value: contactedLeads },
-      { name: "Negociando", value: negotiatingLeads },
-      { name: "Fechados", value: closedLeads },
-    ];
+  const totalInvested = inStock.reduce((s, v) => s + (v.purchase_price || 0) + (v.reconditioning_cost || 0) + (expensesByVehicle[v.id] || 0), 0);
 
-    const agingVehicles = inStock
-      .map((v) => ({
+  const agingVehicles = inStock
+    .map((v) => {
+      const days = differenceInDays(new Date(), new Date(v.entry_date));
+      const totalVehicleCost = (v.purchase_price || 0) + (v.reconditioning_cost || 0) + (expensesByVehicle[v.id] || 0);
+      return {
         id: v.id, brand: v.brand, model: v.model, year_fab: v.year_fab,
-        days: differenceInDays(new Date(), new Date(v.entry_date)),
+        days,
         listing_price: v.listing_price || 0,
         purchase_price: v.purchase_price || 0,
         reconditioning_cost: v.reconditioning_cost || 0,
-        status: differenceInDays(new Date(), new Date(v.entry_date)) > 60 ? "dead" : differenceInDays(new Date(), new Date(v.entry_date)) > 30 ? "slow" : "hot",
-      }))
-      .sort((a, b) => b.days - a.days);
+        dailyCost: days > 0 ? Math.round(totalVehicleCost / days) : 0,
+        status: days > 60 ? "dead" : days > 30 ? "slow" : "hot",
+      };
+    })
+    .sort((a, b) => b.days - a.days);
 
-    return {
-      inStock: inStock.length, totalLeads: leads.length, newLeads: newLeads.length,
-      pendingLeads: pendingLeads.length, totalSales: sales.length,
-      totalRevenue, totalProfit, avgDaysToSell: Math.round(avgDays),
-      conversionRate: Math.round(conversionRate), lostLeadsThisWeek, agingVehicles, funnelData,
-      chartData, prevMonthProfit, prevMonthSales: prevMonthSales.length,
-    };
+  return {
+    inStock: inStock.length, activeLeads: activeLeads.length, totalLeads: leads.length,
+    newLeads: newLeads.length, pendingLeads: pendingLeads.length, totalSales: sales.length,
+    totalRevenue, totalProfit, thisMonthProfit, thisMonthSales: thisMonthSalesArr.length,
+    avgDaysToSell: Math.round(avgDays), conversionRate: Math.round(conversionRate),
+    lostLeadsThisWeek, agingVehicles, funnelData, chartData,
+    prevMonthProfit, prevMonthSales: prevMonthSalesArr.length, totalInvested,
+  };
 };
 
 const Dashboard = () => {
@@ -142,7 +158,7 @@ const Dashboard = () => {
   const { data: stats, isLoading: loading } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: fetchDashboardStats,
-    staleTime: 30_000,
+    staleTime: 15_000,
   });
 
   const fmt = (v: number) =>
@@ -166,11 +182,11 @@ const Dashboard = () => {
   const slowVehicles = stats.agingVehicles.filter((v) => v.status === "slow");
   const hasAlerts = deadVehicles.length > 0 || stats.pendingLeads > 0 || stats.lostLeadsThisWeek > 0;
 
-  // Real month-over-month change
+  // Real month-over-month change (this month vs last month)
   const profitChange = stats.prevMonthProfit > 0
-    ? `${((stats.totalProfit - stats.prevMonthProfit) / stats.prevMonthProfit * 100).toFixed(1)}%`
-    : stats.totalProfit > 0 ? "+100%" : "0%";
-  const profitPositive = stats.totalProfit >= stats.prevMonthProfit;
+    ? `${((stats.thisMonthProfit - stats.prevMonthProfit) / stats.prevMonthProfit * 100).toFixed(1)}%`
+    : stats.thisMonthProfit > 0 ? "+100%" : "0%";
+  const profitPositive = stats.thisMonthProfit >= stats.prevMonthProfit;
 
   return (
     <div className="space-y-6">
@@ -180,22 +196,22 @@ const Dashboard = () => {
           {deadVehicles.length > 0 && (
             <AlertBanner icon={ShieldAlert} color="destructive"
               title={`${deadVehicles.length} carro${deadVehicles.length > 1 ? "s" : ""} parado${deadVehicles.length > 1 ? "s" : ""} há 60+ dias`}
-              subtitle="Estão te fazendo perder dinheiro — reduza o preço agora"
-              actionLabel="Reduzir Preços" onClick={() => navigate("/estoque")}
+              subtitle={`${fmt(deadVehicles.reduce((s, v) => s + v.purchase_price + v.reconditioning_cost, 0))} investidos parados`}
+              onClick={() => navigate("/estoque")}
             />
           )}
           {stats.pendingLeads > 0 && (
             <AlertBanner icon={MessageCircleWarning} color="accent"
               title={`${stats.pendingLeads} lead${stats.pendingLeads > 1 ? "s" : ""} aguardando resposta`}
               subtitle="Leads sem contato perdem interesse rápido"
-              actionLabel="Contatar Leads" onClick={() => navigate("/leads")}
+              onClick={() => navigate("/leads")}
             />
           )}
           {stats.lostLeadsThisWeek > 0 && (
             <AlertBanner icon={TrendingDown} color="destructive"
               title={`${stats.lostLeadsThisWeek} venda${stats.lostLeadsThisWeek > 1 ? "s" : ""} perdida${stats.lostLeadsThisWeek > 1 ? "s" : ""} esta semana`}
               subtitle="Analise os motivos e ajuste sua estratégia"
-              actionLabel="Ver Leads" onClick={() => navigate("/leads")}
+              onClick={() => navigate("/leads")}
             />
           )}
         </div>
@@ -210,17 +226,17 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* KPI Cards — all real data */}
+          {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KPICard icon={DollarSign} label="Lucro Total" value={fmt(stats.totalProfit)}
+            <KPICard icon={DollarSign} label="Lucro (mês)" value={fmt(stats.thisMonthProfit)}
               change={profitPositive ? `+${profitChange}` : profitChange} positive={profitPositive}
-              sublabel={`${stats.totalSales} vendas`} highlight
+              sublabel={`${stats.thisMonthSales} vendas este mês`} highlight
             />
             <KPICard icon={Car} label="Em Estoque" value={String(stats.inStock)}
               change={deadVehicles.length > 0 ? `${deadVehicles.length} parados` : "Saudável"}
-              positive={deadVehicles.length === 0} sublabel={`${fmt(stats.agingVehicles.reduce((s, v) => s + v.purchase_price + v.reconditioning_cost, 0))} investido`}
+              positive={deadVehicles.length === 0} sublabel={`${fmt(stats.totalInvested)} investido`}
             />
-            <KPICard icon={Users} label="Leads Ativos" value={String(stats.totalLeads)}
+            <KPICard icon={Users} label="Leads Ativos" value={String(stats.activeLeads)}
               change={`${stats.newLeads} novos`} positive={stats.newLeads > 0}
               sublabel={`${stats.pendingLeads} aguardando`}
             />
@@ -238,12 +254,12 @@ const Dashboard = () => {
             <QuickAction icon={DollarSign} label="Registrar Venda" color="primary" onClick={() => navigate("/vendas")} />
           </div>
 
-          {/* Gráfico — REAL data */}
+          {/* Gráfico */}
           <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="font-display text-lg font-semibold">Faturamento e Lucro</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Últimos 12 meses (dados reais)</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Últimos 12 meses</p>
               </div>
               <div className="flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1.5">
@@ -359,7 +375,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Painel Lateral — ALL REAL DATA */}
+        {/* Painel Lateral */}
         <div className="hidden xl:block w-[280px] shrink-0 space-y-4">
           <div className="rounded-2xl bg-gradient-card border border-border/50 p-5 shadow-card">
             <h3 className="font-display text-sm font-semibold mb-4 flex items-center gap-2">
@@ -367,8 +383,9 @@ const Dashboard = () => {
               Resumo Financeiro
             </h3>
             <div className="space-y-3">
-              <FinanceRow label="Faturamento" value={fmtK(stats.totalRevenue)} positive={stats.totalRevenue > 0} />
-              <FinanceRow label="Lucro Líquido" value={fmtK(stats.totalProfit)} positive={stats.totalProfit > 0} />
+              <FinanceRow label="Faturamento total" value={fmtK(stats.totalRevenue)} positive={stats.totalRevenue > 0} />
+              <FinanceRow label="Lucro total" value={fmtK(stats.totalProfit)} positive={stats.totalProfit > 0} />
+              <FinanceRow label="Capital investido" value={fmtK(stats.totalInvested)} />
               <FinanceRow label="Ticket Médio" value={stats.totalSales > 0 ? fmtK(stats.totalRevenue / stats.totalSales) : "R$0"} />
               <FinanceRow label="Lucro/Carro" value={stats.totalSales > 0 ? fmtK(stats.totalProfit / stats.totalSales) : "R$0"} positive={stats.totalProfit > 0} />
             </div>
@@ -397,7 +414,7 @@ const Dashboard = () => {
               <div className="space-y-2.5">
                 {deadVehicles.length > 0 && (
                   <InsightCard
-                    text={`Reduza o preço do ${deadVehicles[0].brand} ${deadVehicles[0].model} — parado há ${deadVehicles[0].days} dias`}
+                    text={`Reduza o preço do ${deadVehicles[0].brand} ${deadVehicles[0].model} — parado há ${deadVehicles[0].days} dias (custo: ${fmt(deadVehicles[0].dailyCost)}/dia)`}
                     type="warning"
                   />
                 )}
@@ -436,8 +453,8 @@ const Dashboard = () => {
 
 // ---- Sub-components ----
 
-const AlertBanner = ({ icon: Icon, color, title, subtitle, actionLabel, onClick }: {
-  icon: any; color: "destructive" | "accent" | "primary"; title: string; subtitle: string; actionLabel: string; onClick: () => void;
+const AlertBanner = ({ icon: Icon, color, title, subtitle, onClick }: {
+  icon: any; color: "destructive" | "accent" | "primary"; title: string; subtitle: string; onClick: () => void;
 }) => {
   const colorMap = {
     destructive: "bg-destructive/8 border-destructive/20 text-destructive",
@@ -491,7 +508,7 @@ const InsightCard = ({ text, type }: { text: string; type: "positive" | "warning
   </div>
 );
 
-const KPICard = ({ icon: Icon, label, value, change, positive, sublabel, highlight }: {
+const KPICard = ({ icon: Icon, value, change, positive, sublabel, highlight }: {
   icon: any; label: string; value: string; change: string; positive: boolean; sublabel: string; highlight?: boolean;
 }) => (
   <div className={`rounded-2xl bg-gradient-card border p-4 shadow-card transition-all duration-300 group ${
@@ -539,6 +556,9 @@ const InventoryCard = ({ vehicle: v, fmt }: { vehicle: any; fmt: (v: number) => 
             {profit >= 0 ? "+" : ""}{fmt(profit)}
           </span>
         </div>
+        {v.dailyCost > 0 && v.status !== "hot" && (
+          <p className="text-[9px] text-destructive/70 mt-1">💸 {fmt(v.dailyCost)}/dia parado</p>
+        )}
       </div>
     </div>
   );
