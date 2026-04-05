@@ -14,11 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      lead_interactions: {
+        Row: {
+          action_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string
+          message: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id: string
+          message?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string
+          message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           assigned_to: string | null
           created_at: string
           email: string | null
+          follow_up_count: number
           id: string
           last_contact_at: string | null
           name: string
@@ -34,6 +70,7 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           email?: string | null
+          follow_up_count?: number
           id?: string
           last_contact_at?: string | null
           name: string
@@ -49,6 +86,7 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           email?: string | null
+          follow_up_count?: number
           id?: string
           last_contact_at?: string | null
           name?: string
@@ -296,7 +334,13 @@ export type Database = {
         | "instagram"
         | "indicacao"
         | "outro"
-      lead_status: "novo" | "contactado" | "negociando" | "fechado" | "perdido"
+      lead_status:
+        | "novo"
+        | "contactado"
+        | "aguardando"
+        | "negociando"
+        | "fechado"
+        | "perdido"
       vehicle_status: "em_estoque" | "vendido" | "reservado"
     }
     CompositeTypes: {
@@ -434,7 +478,14 @@ export const Constants = {
         "indicacao",
         "outro",
       ],
-      lead_status: ["novo", "contactado", "negociando", "fechado", "perdido"],
+      lead_status: [
+        "novo",
+        "contactado",
+        "aguardando",
+        "negociando",
+        "fechado",
+        "perdido",
+      ],
       vehicle_status: ["em_estoque", "vendido", "reservado"],
     },
   },
