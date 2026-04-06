@@ -10,8 +10,7 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 
 const links = [
   { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
-  { to: "/estoque", icon: Car, label: "Estoque & Lucro" },
-  { to: "/vendas", icon: DollarSign, label: "Vendas" },
+  { to: "/estoque", icon: Car, label: "Estoque" },
   { to: "/trocas", icon: ArrowLeftRight, label: "Trocas" },
   { to: "/configuracoes", icon: Settings, label: "Configurações" },
 ];
