@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBusiness } from "@/contexts/BusinessContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -17,7 +18,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Search, Car, Calendar, DollarSign, TrendingUp, Zap, AlertTriangle, Pencil, Trash2, Upload, Tag, ArrowDown, ArrowUp, Megaphone } from "lucide-react";
+import { Plus, Search, Package, Calendar, DollarSign, TrendingUp, Zap, AlertTriangle, Pencil, Trash2, Upload, Tag, ArrowDown, ArrowUp, Megaphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInDays } from "date-fns";
 import SellVehicleDialog from "@/components/SellVehicleDialog";
@@ -30,6 +31,7 @@ type Vehicle = {
   listing_price: number | null; suggested_price: number | null;
   status: "em_estoque" | "vendido" | "reservado";
   entry_date: string; notes: string | null; photos: string[] | null;
+  custom_fields: Record<string, any> | null;
 };
 
 const statusColors: Record<string, string> = {
@@ -43,10 +45,12 @@ const emptyForm = {
   brand: "", model: "", year_fab: new Date().getFullYear(), year_model: new Date().getFullYear(),
   plate: "", color: "", mileage: 0, fuel: "flex", transmission: "manual",
   purchase_price: 0, reconditioning_cost: 0, transport_cost: 0, listing_price: 0, desired_margin: 20, notes: "",
+  custom_fields: {} as Record<string, any>,
 };
 
 const Estoque = () => {
   const navigate = useNavigate();
+  const { labels, customFields, businessType } = useBusiness();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("days_desc");
@@ -92,6 +96,7 @@ const Estoque = () => {
       purchase_price: v.purchase_price, reconditioning_cost: v.reconditioning_cost || 0,
       transport_cost: v.transport_cost || 0,
       listing_price: v.listing_price || 0, desired_margin: margin, notes: v.notes || "",
+      custom_fields: (v.custom_fields as Record<string, any>) || {},
     });
     setFormStep(1);
     setDialogOpen(true);
@@ -107,13 +112,14 @@ const Estoque = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const payload = {
+    const payload: any = {
       brand: form.brand, model: form.model, year_fab: form.year_fab, year_model: form.year_model,
       plate: form.plate || null, color: form.color || null, mileage: form.mileage,
       fuel: form.fuel, transmission: form.transmission, purchase_price: form.purchase_price,
       reconditioning_cost: form.reconditioning_cost, transport_cost: form.transport_cost,
       listing_price: form.listing_price || suggestedPrice, suggested_price: suggestedPrice,
       notes: form.notes || null,
+      custom_fields: form.custom_fields,
     };
 
     let error;
@@ -127,7 +133,7 @@ const Estoque = () => {
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: editingId ? "Veículo atualizado! ✅" : "Veículo adicionado! 🚗" });
+      toast({ title: editingId ? `${labels.itemSingular} atualizado! ✅` : `${labels.itemSingular} adicionado! 📦` });
       resetForm();
       invalidateAll();
     }
@@ -138,7 +144,7 @@ const Estoque = () => {
     if (error) {
       toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Veículo excluído" });
+      toast({ title: `${labels.itemSingular} excluído` });
       invalidateAll();
     }
   };
@@ -170,7 +176,6 @@ const Estoque = () => {
     setUploadingPhotos(false);
   };
 
-  // Enriched vehicle data
   const enriched = vehicles.map((v) => {
     const days = differenceInDays(new Date(), new Date(v.entry_date));
     const cost = v.purchase_price + (v.reconditioning_cost || 0) + (v.transport_cost || 0);
@@ -196,7 +201,6 @@ const Estoque = () => {
     return matchSearch && matchStatus;
   });
 
-  // Sort
   const sorted = [...filtered].sort((a, b) => {
     switch (sortBy) {
       case "days_desc": return b.days - a.days;
@@ -220,14 +224,16 @@ const Estoque = () => {
   const totalProfitPotential = inStockVehicles.reduce((s, v) => s + v.profit, 0);
   const redCount = inStockVehicles.filter((v) => v.agingStatus === "red").length;
 
+  const isDealership = businessType === "dealership";
+
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">Estoque & Lucro</h1>
-          <p className="text-sm text-muted-foreground">{inStockCount} veículos • {formatCurrency(totalInvested)} investido • Lucro potencial: {formatCurrency(totalProfitPotential)}</p>
+          <h1 className="font-display text-2xl font-bold">{labels.stockPage} & Lucro</h1>
+          <p className="text-sm text-muted-foreground">{inStockCount} {labels.itemPlural.toLowerCase()} • {formatCurrency(totalInvested)} investido • Lucro potencial: {formatCurrency(totalProfitPotential)}</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(v) => { if (!v) resetForm(); else setDialogOpen(v); }}>
           <DialogTrigger asChild>
@@ -238,7 +244,7 @@ const Estoque = () => {
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-card border-border">
             <DialogHeader>
-              <DialogTitle className="font-display">{editingId ? "Editar Veículo" : "Novo Veículo"}</DialogTitle>
+              <DialogTitle className="font-display">{editingId ? labels.editItem : labels.addItem}</DialogTitle>
             </DialogHeader>
 
             <div className="flex items-center gap-2 mb-4">
@@ -256,33 +262,48 @@ const Estoque = () => {
               {formStep === 1 && (
                 <>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-xs text-muted-foreground mb-1 block">Marca *</label>
+                    <div><label className="text-xs text-muted-foreground mb-1 block">{labels.brand} *</label>
                       <Input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} required /></div>
-                    <div><label className="text-xs text-muted-foreground mb-1 block">Modelo *</label>
+                    <div><label className="text-xs text-muted-foreground mb-1 block">{labels.model} *</label>
                       <Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} required /></div>
-                    <div><label className="text-xs text-muted-foreground mb-1 block">Ano Fabricação</label>
+                    <div><label className="text-xs text-muted-foreground mb-1 block">{labels.yearFab}</label>
                       <Input type="number" value={form.year_fab || ""} onChange={(e) => setForm({ ...form, year_fab: +e.target.value })} /></div>
-                    <div><label className="text-xs text-muted-foreground mb-1 block">Ano Modelo</label>
+                    <div><label className="text-xs text-muted-foreground mb-1 block">{labels.yearModel}</label>
                       <Input type="number" value={form.year_model || ""} onChange={(e) => setForm({ ...form, year_model: +e.target.value })} /></div>
-                    <div><label className="text-xs text-muted-foreground mb-1 block">Placa</label>
-                      <Input value={form.plate} onChange={(e) => setForm({ ...form, plate: e.target.value })} /></div>
-                    <div><label className="text-xs text-muted-foreground mb-1 block">Cor</label>
-                      <Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} /></div>
-                    <div><label className="text-xs text-muted-foreground mb-1 block">Quilometragem</label>
-                      <Input type="number" value={form.mileage || ""} onChange={(e) => setForm({ ...form, mileage: +e.target.value })} /></div>
-                    <div><label className="text-xs text-muted-foreground mb-1 block">Combustível</label>
-                      <Select value={form.fuel} onValueChange={(v) => setForm({ ...form, fuel: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="flex">Flex</SelectItem><SelectItem value="gasolina">Gasolina</SelectItem>
-                          <SelectItem value="etanol">Etanol</SelectItem><SelectItem value="diesel">Diesel</SelectItem>
-                          <SelectItem value="eletrico">Elétrico</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
+
+                  {/* Custom fields from template */}
+                  {customFields.length > 0 && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {customFields.map((field) => (
+                        <div key={field.key}>
+                          <label className="text-xs text-muted-foreground mb-1 block">{field.label}</label>
+                          {field.type === "select" && field.options ? (
+                            <Select 
+                              value={form.custom_fields[field.key] || ""} 
+                              onValueChange={(v) => setForm({ ...form, custom_fields: { ...form.custom_fields, [field.key]: v } })}
+                            >
+                              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                              <SelectContent>
+                                {field.options.map((opt) => (
+                                  <SelectItem key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              type={field.type === "number" ? "number" : "text"}
+                              value={form.custom_fields[field.key] || ""}
+                              onChange={(e) => setForm({ ...form, custom_fields: { ...form.custom_fields, [field.key]: field.type === "number" ? +e.target.value : e.target.value } })}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <Button type="button" className="w-full" onClick={() => {
-                    if (!form.brand || !form.model) { toast({ title: "Preencha marca e modelo", variant: "destructive" }); return; }
+                    if (!form.brand || !form.model) { toast({ title: `Preencha ${labels.brand.toLowerCase()} e ${labels.model.toLowerCase()}`, variant: "destructive" }); return; }
                     setFormStep(2);
                   }}>Próximo →</Button>
                 </>
@@ -358,7 +379,7 @@ const Estoque = () => {
                   <div className="flex gap-2">
                     <Button type="button" variant="outline" onClick={() => setFormStep(2)} className="flex-1">← Voltar</Button>
                     <Button type="submit" className="flex-1 bg-gradient-profit text-primary-foreground font-semibold shadow-glow" disabled={submitting}>
-                      {submitting ? "Salvando..." : editingId ? "Atualizar" : "Salvar Veículo"}
+                      {submitting ? "Salvando..." : editingId ? "Atualizar" : `Salvar ${labels.itemSingular}`}
                     </Button>
                   </div>
                 </>
@@ -371,7 +392,7 @@ const Estoque = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4 bg-gradient-card border-border/50 shadow-card">
-          <div className="flex items-center gap-2 mb-1"><Car className="w-4 h-4 text-primary" /><span className="text-xs text-muted-foreground">Em Estoque</span></div>
+          <div className="flex items-center gap-2 mb-1"><Package className="w-4 h-4 text-primary" /><span className="text-xs text-muted-foreground">Em Estoque</span></div>
           <p className="font-display text-xl font-bold">{inStockCount}</p>
         </Card>
         <Card className="p-4 bg-gradient-card border-border/50 shadow-card">
@@ -415,7 +436,7 @@ const Estoque = () => {
         </Select>
       </div>
 
-      {/* Vehicle Cards */}
+      {/* Item Cards */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sorted.map((v) => {
           const firstPhoto = v.photos && v.photos.length > 0 ? v.photos[0] : null;
@@ -435,7 +456,7 @@ const Estoque = () => {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-display font-semibold">{v.brand} {v.model}</h3>
-                    <p className="text-xs text-muted-foreground">{v.year_fab}/{v.year_model} • {v.plate || "Sem placa"}</p>
+                    <p className="text-xs text-muted-foreground">{v.year_fab}/{v.year_model}{isDealership && ` • ${v.plate || "Sem placa"}`}</p>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Badge className={statusColors[v.status]}>{statusLabels[v.status]}</Badge>
@@ -445,18 +466,15 @@ const Estoque = () => {
                   </div>
                 </div>
 
-                {/* Cost breakdown */}
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="flex items-center gap-1.5 text-muted-foreground"><DollarSign className="w-3.5 h-3.5" /><span>Custo: {formatCurrency(v.cost)}</span></div>
                   <div className="flex items-center gap-1.5 text-muted-foreground"><DollarSign className="w-3.5 h-3.5 text-primary" /><span>Venda: {formatCurrency(v.listing_price || 0)}</span></div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground"><Car className="w-3.5 h-3.5" /><span>{(v.mileage || 0).toLocaleString("pt-BR")} km</span></div>
                   <div className="flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5" />
                     <span className={v.agingStatus === "red" ? "text-destructive font-semibold" : v.agingStatus === "yellow" ? "text-amber-500 font-semibold" : "text-muted-foreground"}>{v.days} dias</span>
                   </div>
                 </div>
 
-                {/* Profit display */}
                 <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between">
                   <div>
                     <span className="text-xs text-muted-foreground">Lucro</span>
@@ -472,7 +490,6 @@ const Estoque = () => {
                   </div>
                 </div>
 
-                {/* Decision Suggestion */}
                 {v.suggestion && v.status === "em_estoque" && (
                   <div className={`mt-2 rounded-lg px-3 py-2 flex items-center gap-2 ${
                     v.suggestionIcon === "promo" || v.suggestionIcon === "down"
@@ -487,7 +504,7 @@ const Estoque = () => {
                 {v.agingStatus === "red" && v.status === "em_estoque" && (
                   <div className="mt-2 rounded-lg bg-destructive/5 border border-destructive/10 px-3 py-2">
                     <p className="text-[10px] text-destructive font-medium">
-                      ⚠️ Este veículo está custando dinheiro diariamente
+                      ⚠️ {labels.itemCostDaily}
                     </p>
                   </div>
                 )}
@@ -501,12 +518,11 @@ const Estoque = () => {
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="mt-3 pt-3 border-t border-border/30 flex items-center gap-2">
-                {v.status === "em_estoque" && (
+                  {v.status === "em_estoque" && (
                     <Button size="sm" className="flex-1 text-xs h-8 bg-primary text-primary-foreground"
                       onClick={(e) => handleOpenSell(v, e)}>
-                      <Tag className="w-3 h-3 mr-1" /> Vender
+                      <Tag className="w-3 h-3 mr-1" /> {labels.sellItem}
                     </Button>
                   )}
                   <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => openEdit(v)}>
@@ -528,8 +544,8 @@ const Estoque = () => {
                     </AlertDialogTrigger>
                     <AlertDialogContent className="bg-card border-border">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir veículo?</AlertDialogTitle>
-                        <AlertDialogDescription>O veículo {v.brand} {v.model} será removido permanentemente.</AlertDialogDescription>
+                        <AlertDialogTitle>Excluir {labels.itemSingular.toLowerCase()}?</AlertDialogTitle>
+                        <AlertDialogDescription>{labels.deleteConfirm.replace("O veículo", `${v.brand} ${v.model}`)}</AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -546,11 +562,11 @@ const Estoque = () => {
 
       {sorted.length === 0 && (
         <div className="text-center py-16">
-          <Car className="w-12 h-12 mx-auto mb-3 opacity-30 text-muted-foreground" />
-          <p className="text-muted-foreground mb-4">Nenhum veículo encontrado</p>
+          <Package className="w-12 h-12 mx-auto mb-3 opacity-30 text-muted-foreground" />
+          <p className="text-muted-foreground mb-4">{labels.noItems}</p>
           {vehicles.length === 0 && (
             <Button className="bg-primary text-primary-foreground font-semibold" onClick={() => setDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" /> Adicionar seu primeiro veículo
+              <Plus className="w-4 h-4 mr-2" /> {labels.addFirstItem}
             </Button>
           )}
         </div>
