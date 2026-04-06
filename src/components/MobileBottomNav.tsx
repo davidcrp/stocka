@@ -1,9 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Car, Plus, ArrowLeftRight, Settings } from "lucide-react";
+import { BarChart3, Package, Plus, ArrowLeftRight, Settings } from "lucide-react";
 
 const tabs = [
   { to: "/dashboard", icon: BarChart3, label: "Painel" },
-  { to: "/estoque", icon: Car, label: "Estoque" },
+  { to: "/estoque", icon: Package, label: "Estoque" },
   { to: "__fab__", icon: Plus, label: "Novo" },
   { to: "/trocas", icon: ArrowLeftRight, label: "Trocas" },
   { to: "/configuracoes", icon: Settings, label: "Config" },
