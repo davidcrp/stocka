@@ -263,6 +263,9 @@ const Dashboard = () => {
             <Button variant="outline" size="sm" onClick={() => navigate("/estoque")} className="text-xs h-9">
               <Car className="w-3.5 h-3.5 mr-1.5" /> Ver Estoque
             </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate("/estoque")} className="text-xs h-9">
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Nova Venda
+            </Button>
             <Button size="sm" onClick={() => navigate("/trocas")} className="text-xs h-9">
               <ArrowLeftRight className="w-3.5 h-3.5 mr-1.5" /> Nova Troca
             </Button>
