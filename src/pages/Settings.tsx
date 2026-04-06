@@ -32,7 +32,14 @@ const accentPresets = [
 
 const Settings = () => {
   const { mode, colors, setMode, setColors } = useTheme();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [copied, setCopied] = useState<string | null>(null);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
