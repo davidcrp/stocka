@@ -549,11 +549,19 @@ const Estoque = () => {
           <Car className="w-12 h-12 mx-auto mb-3 opacity-30 text-muted-foreground" />
           <p className="text-muted-foreground mb-4">Nenhum veículo encontrado</p>
           {vehicles.length === 0 && (
-            <Button className="bg-gradient-profit text-primary-foreground font-semibold shadow-glow" onClick={() => setDialogOpen(true)}>
+            <Button className="bg-primary text-primary-foreground font-semibold" onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" /> Adicionar seu primeiro veículo
             </Button>
           )}
         </div>
+      )}
+
+      {sellVehicle && (
+        <SellVehicleDialog
+          open={!!sellVehicle}
+          onOpenChange={(open) => { if (!open) setSellVehicle(null); }}
+          vehicle={sellVehicle}
+        />
       )}
     </div>
   );
