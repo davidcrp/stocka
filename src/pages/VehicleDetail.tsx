@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ArrowLeft, Calendar, Car, DollarSign, TrendingUp, Clock, Upload, Fuel, Gauge, Palette,
+  ArrowLeft, Calendar, Car, DollarSign, TrendingUp, Clock, Upload, Fuel, Gauge, Palette, CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import SellVehicleDialog from "@/components/SellVehicleDialog";
 
 const VehicleDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,8 @@ const VehicleDetail = () => {
   const { user } = useAuth();
   const [selectedImg, setSelectedImg] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [sellOpen, setSellOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: vehicle, isLoading, refetch } = useQuery({
     queryKey: ["vehicle-detail", id],
@@ -82,9 +85,16 @@ const VehicleDetail = () => {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <Button variant="ghost" size="sm" onClick={() => navigate("/estoque")} className="text-muted-foreground">
-        <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao Estoque
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/estoque")} className="text-muted-foreground">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao Estoque
+        </Button>
+        {vehicle.status === "em_estoque" && (
+          <Button size="sm" className="bg-primary text-primary-foreground gap-1.5" onClick={() => setSellOpen(true)}>
+            <CheckCircle2 className="w-4 h-4" /> Marcar como Vendido
+          </Button>
+        )}
+      </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Image Gallery */}
@@ -197,6 +207,14 @@ const VehicleDetail = () => {
           )}
         </div>
       </div>
+
+      <SellVehicleDialog
+        open={sellOpen}
+        onOpenChange={setSellOpen}
+        vehicle={vehicle}
+        extraCosts={expenses.reduce((s: number, e: any) => s + (e.amount || 0), 0)}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 };

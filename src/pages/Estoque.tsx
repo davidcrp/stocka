@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +20,7 @@ import {
 import { Plus, Search, Car, Calendar, DollarSign, TrendingUp, Zap, AlertTriangle, Pencil, Trash2, Upload, Tag, ArrowDown, ArrowUp, Megaphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInDays } from "date-fns";
+import SellVehicleDialog from "@/components/SellVehicleDialog";
 
 type Vehicle = {
   id: string; brand: string; model: string; year_fab: number; year_model: number;
@@ -57,6 +58,7 @@ const Estoque = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [sellVehicle, setSellVehicle] = useState<Vehicle | null>(null);
 
   const [form, setForm] = useState(emptyForm);
 
@@ -141,21 +143,10 @@ const Estoque = () => {
     }
   };
 
-  const handleQuickSell = async (v: Vehicle) => {
-    const salePrice = v.listing_price || v.purchase_price;
-    const { error } = await supabase.from("sales").insert({
-      vehicle_id: v.id, seller_id: user?.id || null, final_price: salePrice, commission: 0, payment_method: "dinheiro", account_id: profile?.account_id,
-    });
-    if (error) {
-      toast({ title: "Erro ao registrar venda", description: error.message, variant: "destructive" });
-      return;
-    }
-    await supabase.from("vehicles").update({
-      status: "vendido" as const, sale_date: new Date().toISOString().split("T")[0], final_sale_price: salePrice,
-    }).eq("id", v.id);
-    toast({ title: `${v.brand} ${v.model} vendido! 🎉` });
-    invalidateAll();
-  };
+  const handleOpenSell = useCallback((v: Vehicle, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSellVehicle(v);
+  }, []);
 
   const handlePhotoUpload = async (vehicleId: string, files: FileList) => {
     setUploadingPhotos(true);
@@ -512,26 +503,11 @@ const Estoque = () => {
 
                 {/* Actions */}
                 <div className="mt-3 pt-3 border-t border-border/30 flex items-center gap-2">
-                  {v.status === "em_estoque" && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" className="flex-1 text-xs h-8 bg-gradient-profit text-primary-foreground">
-                          <Tag className="w-3 h-3 mr-1" /> Vender
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-card border-border">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Venda rápida</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Registrar venda do {v.brand} {v.model} por {formatCurrency(v.listing_price || v.purchase_price)}?
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleQuickSell(v)} className="bg-gradient-profit text-primary-foreground">Confirmar</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                {v.status === "em_estoque" && (
+                    <Button size="sm" className="flex-1 text-xs h-8 bg-primary text-primary-foreground"
+                      onClick={(e) => handleOpenSell(v, e)}>
+                      <Tag className="w-3 h-3 mr-1" /> Vender
+                    </Button>
                   )}
                   <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => openEdit(v)}>
                     <Pencil className="w-3 h-3 mr-1" /> Editar
@@ -573,11 +549,19 @@ const Estoque = () => {
           <Car className="w-12 h-12 mx-auto mb-3 opacity-30 text-muted-foreground" />
           <p className="text-muted-foreground mb-4">Nenhum veículo encontrado</p>
           {vehicles.length === 0 && (
-            <Button className="bg-gradient-profit text-primary-foreground font-semibold shadow-glow" onClick={() => setDialogOpen(true)}>
+            <Button className="bg-primary text-primary-foreground font-semibold" onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" /> Adicionar seu primeiro veículo
             </Button>
           )}
         </div>
+      )}
+
+      {sellVehicle && (
+        <SellVehicleDialog
+          open={!!sellVehicle}
+          onOpenChange={(open) => { if (!open) setSellVehicle(null); }}
+          vehicle={sellVehicle}
+        />
       )}
     </div>
   );
