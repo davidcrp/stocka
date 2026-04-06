@@ -212,6 +212,12 @@ const Settings = () => {
           </CardContent>
         </Card>
       </div>
+      {/* Logout button for mobile */}
+      <div className="lg:hidden pt-4 pb-20">
+        <Button variant="destructive" className="w-full" onClick={handleSignOut}>
+          <LogOut className="w-4 h-4 mr-2" /> Sair da conta
+        </Button>
+      </div>
     </div>
   );
 };
