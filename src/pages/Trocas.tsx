@@ -283,27 +283,27 @@ const Trocas = () => {
                     <div><label className="text-xs text-muted-foreground mb-1 block">Modelo *</label>
                       <Input value={newVehicle.model} onChange={(e) => setNewVehicle({ ...newVehicle, model: e.target.value })} /></div>
                     <div><label className="text-xs text-muted-foreground mb-1 block">Ano Fab.</label>
-                      <Input type="number" value={newVehicle.year_fab} onChange={(e) => setNewVehicle({ ...newVehicle, year_fab: +e.target.value })} /></div>
+                      <Input type="number" value={newVehicle.year_fab || ""} onChange={(e) => setNewVehicle({ ...newVehicle, year_fab: +e.target.value })} /></div>
                     <div><label className="text-xs text-muted-foreground mb-1 block">Ano Modelo</label>
-                      <Input type="number" value={newVehicle.year_model} onChange={(e) => setNewVehicle({ ...newVehicle, year_model: +e.target.value })} /></div>
+                      <Input type="number" value={newVehicle.year_model || ""} onChange={(e) => setNewVehicle({ ...newVehicle, year_model: +e.target.value })} /></div>
                   </div>
                 )}
 
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block font-medium">Valor da troca (R$) — quanto vale o carro recebido</label>
-                  <Input type="number" value={tradeValue} onChange={(e) => setTradeValue(+e.target.value)} className="text-lg font-bold" />
+                  <Input type="number" value={tradeValue || ""} onChange={(e) => setTradeValue(+e.target.value)} className="text-lg font-bold" />
                 </div>
 
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block font-medium">Diferença em dinheiro (R$)</label>
                   <p className="text-[10px] text-muted-foreground mb-1">Positivo = cliente pagou a mais • Negativo = você pagou ao cliente</p>
-                  <Input type="number" value={cashDifference} onChange={(e) => setCashDifference(+e.target.value)} className="text-lg font-bold" />
+                  <Input type="number" value={cashDifference || ""} onChange={(e) => setCashDifference(+e.target.value)} className="text-lg font-bold" />
                 </div>
 
                 {receivedMode === "new" && (
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Preço de revenda estimado (R$)</label>
-                    <Input type="number" value={newVehicle.listing_price} onChange={(e) => setNewVehicle({ ...newVehicle, listing_price: +e.target.value })} />
+                    <Input type="number" value={newVehicle.listing_price || ""} onChange={(e) => setNewVehicle({ ...newVehicle, listing_price: +e.target.value })} />
                   </div>
                 )}
 
