@@ -232,11 +232,11 @@ const Vendas = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Preço Final (R$) *</label>
-                  <Input type="number" value={form.final_price} onChange={(e) => setForm({ ...form, final_price: +e.target.value })} required />
+                  <Input type="number" value={form.final_price || ""} onChange={(e) => setForm({ ...form, final_price: +e.target.value })} required />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Comissão (R$)</label>
-                  <Input type="number" value={form.commission} onChange={(e) => setForm({ ...form, commission: +e.target.value })} />
+                  <Input type="number" value={form.commission || ""} onChange={(e) => setForm({ ...form, commission: +e.target.value })} />
                 </div>
               </div>
 
