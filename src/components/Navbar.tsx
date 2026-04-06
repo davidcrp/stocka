@@ -2,8 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logoLight from "@/assets/logo-light.png";
-
+import icon from "@/assets/icon.png";
 const navLinks = [
   { label: "Features", href: "#features" },
   { label: "Pricing", href: "#pricing" },
@@ -22,7 +21,8 @@ const Navbar = () => {
       <div className="container flex items-center justify-between h-16">
         {/* Logo */}
         <a href="/" className="flex items-center gap-2">
-          <img src={logoLight} alt="CarROI" className="h-8" />
+          <img src={icon} alt="CarROI" className="h-7 w-7" />
+          <span className="font-display text-xl font-bold">CarROI</span>
         </a>
 
         {/* Desktop Nav */}
