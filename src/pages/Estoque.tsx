@@ -503,26 +503,11 @@ const Estoque = () => {
 
                 {/* Actions */}
                 <div className="mt-3 pt-3 border-t border-border/30 flex items-center gap-2">
-                  {v.status === "em_estoque" && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" className="flex-1 text-xs h-8 bg-gradient-profit text-primary-foreground">
-                          <Tag className="w-3 h-3 mr-1" /> Vender
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-card border-border">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Venda rápida</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Registrar venda do {v.brand} {v.model} por {formatCurrency(v.listing_price || v.purchase_price)}?
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleQuickSell(v)} className="bg-gradient-profit text-primary-foreground">Confirmar</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                {v.status === "em_estoque" && (
+                    <Button size="sm" className="flex-1 text-xs h-8 bg-primary text-primary-foreground"
+                      onClick={(e) => handleOpenSell(v, e)}>
+                      <Tag className="w-3 h-3 mr-1" /> Vender
+                    </Button>
                   )}
                   <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => openEdit(v)}>
                     <Pencil className="w-3 h-3 mr-1" /> Editar
