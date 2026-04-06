@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBusiness } from "@/contexts/BusinessContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ type SellVehicleDialogProps = {
 
 const SellVehicleDialog = ({ open, onOpenChange, vehicle, extraCosts = 0, onSuccess }: SellVehicleDialogProps) => {
   const { user, profile } = useAuth();
+  const { labels } = useBusiness();
   const queryClient = useQueryClient();
   const defaultPrice = vehicle.listing_price || vehicle.purchase_price || 0;
   const [salePrice, setSalePrice] = useState(defaultPrice);

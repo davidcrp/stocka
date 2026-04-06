@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useBusiness } from "@/contexts/BusinessContext";
 import { differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ArrowLeft, Calendar, Car, DollarSign, TrendingUp, Clock, Upload, Fuel, Gauge, Palette, CheckCircle2,
+  ArrowLeft, Calendar, Package, DollarSign, TrendingUp, Clock, Upload, CheckCircle2, Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,6 +20,7 @@ const VehicleDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { labels, customFields } = useBusiness();
   const [selectedImg, setSelectedImg] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [sellOpen, setSellOpen] = useState(false);
@@ -82,12 +84,13 @@ const VehicleDetail = () => {
   const days = differenceInDays(new Date(), new Date(vehicle.entry_date));
   const agingStatus = days < 15 ? "green" : days < 30 ? "yellow" : "red";
   const photos = vehicle.photos || [];
+  const cf = (vehicle as any).custom_fields || {};
 
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={() => navigate("/estoque")} className="text-muted-foreground">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao Estoque
+          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao {labels.stockPage}
         </Button>
         {vehicle.status === "em_estoque" && (
           <Button size="sm" className="bg-primary text-primary-foreground gap-1.5" onClick={() => setSellOpen(true)}>
@@ -104,7 +107,7 @@ const VehicleDetail = () => {
               <img src={photos[selectedImg] || photos[0]} alt={`${vehicle.brand} ${vehicle.model}`} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                <Car className="w-16 h-16 mb-3 opacity-30" />
+                <Package className="w-16 h-16 mb-3 opacity-30" />
                 <p className="text-sm">Sem fotos</p>
               </div>
             )}
@@ -129,7 +132,7 @@ const VehicleDetail = () => {
           </label>
         </div>
 
-        {/* Vehicle Info */}
+        {/* Item Info */}
         <div className="space-y-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
@@ -138,15 +141,27 @@ const VehicleDetail = () => {
                 {days} dias
               </Badge>
             </div>
-            <p className="text-muted-foreground">{vehicle.year_fab}/{vehicle.year_model} • {vehicle.plate || "Sem placa"}</p>
+            <p className="text-muted-foreground">{vehicle.year_fab}/{vehicle.year_model}</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <InfoItem icon={Fuel} label="Combustível" value={vehicle.fuel || "—"} />
-            <InfoItem icon={Gauge} label="Km" value={vehicle.mileage ? `${vehicle.mileage.toLocaleString("pt-BR")} km` : "—"} />
-            <InfoItem icon={Palette} label="Cor" value={vehicle.color || "—"} />
-            <InfoItem icon={Car} label="Câmbio" value={vehicle.transmission === "automatico" ? "Automático" : "Manual"} />
-          </div>
+          {/* Custom fields display */}
+          {customFields.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              {customFields.map((field) => {
+                const value = cf[field.key];
+                if (!value && value !== 0) return null;
+                return (
+                  <div key={field.key} className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/30 border border-border/50">
+                    <Info className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">{field.label}</p>
+                      <p className="text-sm font-medium capitalize">{String(value)}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Cost Breakdown */}
           <Card className="p-5 border-border">
@@ -218,16 +233,6 @@ const VehicleDetail = () => {
     </div>
   );
 };
-
-const InfoItem = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
-  <div className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/30 border border-border/50">
-    <Icon className="w-4 h-4 text-muted-foreground" />
-    <div>
-      <p className="text-[10px] text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium capitalize">{value}</p>
-    </div>
-  </div>
-);
 
 const CostRow = ({ label, value }: { label: string; value: string }) => (
   <div className="flex justify-between text-sm">

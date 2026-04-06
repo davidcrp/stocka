@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
-  BarChart3, Car, LogOut, Menu, X, Settings, Sun, Moon, ArrowLeftRight, Users, Crown,
+  BarChart3, Package, LogOut, Menu, X, Settings, Sun, Moon, ArrowLeftRight, Users, Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -11,7 +11,7 @@ import icon from "@/assets/icon.png";
 
 const links = [
   { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
-  { to: "/estoque", icon: Car, label: "Estoque" },
+  { to: "/estoque", icon: Package, label: "Estoque" },
   { to: "/trocas", icon: ArrowLeftRight, label: "Trocas" },
   { to: "/configuracoes", icon: Settings, label: "Configurações" },
 ];
@@ -76,7 +76,6 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             </NavLink>
           ))}
 
-          {/* Admin-only links */}
           {(profile?.role === "admin" || profile?.role === "gestor") && (
             <>
               <div className="border-t border-border/30 my-3" />
@@ -103,7 +102,6 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             </>
           )}
 
-          {/* Superadmin link */}
           {(profile as any)?.is_superadmin && (
             <>
               <div className="border-t border-border/30 my-3" />
@@ -149,7 +147,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           <button className="lg:hidden p-1.5 rounded-lg hover:bg-secondary mr-3" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-5 h-5" />
           </button>
-          <h2 className="font-display text-sm font-semibold">Gestão da Loja</h2>
+          <h2 className="font-display text-sm font-semibold">Gestão do Negócio</h2>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={toggleMode} title={mode === "dark" ? "Modo claro" : "Modo escuro"}>
               {mode === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}

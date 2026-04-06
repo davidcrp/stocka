@@ -16,17 +16,23 @@ export type Database = {
     Tables: {
       accounts: {
         Row: {
+          business_type: string
           created_at: string
+          custom_labels: Json
           id: string
           name: string
         }
         Insert: {
+          business_type?: string
           created_at?: string
+          custom_labels?: Json
           id?: string
           name: string
         }
         Update: {
+          business_type?: string
           created_at?: string
+          custom_labels?: Json
           id?: string
           name?: string
         }
@@ -417,9 +423,11 @@ export type Database = {
         Row: {
           account_id: string | null
           brand: string
+          category: string | null
           color: string | null
           created_at: string
           created_by: string | null
+          custom_fields: Json
           entry_date: string
           final_sale_price: number | null
           fipe_code: string | null
@@ -445,9 +453,11 @@ export type Database = {
         Insert: {
           account_id?: string | null
           brand: string
+          category?: string | null
           color?: string | null
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           entry_date?: string
           final_sale_price?: number | null
           fipe_code?: string | null
@@ -473,9 +483,11 @@ export type Database = {
         Update: {
           account_id?: string | null
           brand?: string
+          category?: string | null
           color?: string | null
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
           entry_date?: string
           final_sale_price?: number | null
           fipe_code?: string | null
