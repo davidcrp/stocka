@@ -20,7 +20,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { CheckCircle2, XCircle, Clock, Users, ShieldCheck, UserPlus, Mail, Send } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { CheckCircle2, XCircle, Clock, Users, ShieldCheck, UserPlus, Mail, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Profile = {
@@ -43,12 +54,18 @@ type Invitation = {
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   pending: { label: "Pendente", color: "bg-amber-500/10 text-amber-500", icon: Clock },
-  approved: { label: "Aprovado", color: "bg-primary/10 text-primary", icon: CheckCircle2 },
-  rejected: { label: "Rejeitado", color: "bg-destructive/10 text-destructive", icon: XCircle },
+  approved: { label: "Ativo", color: "bg-primary/10 text-primary", icon: CheckCircle2 },
+  rejected: { label: "Bloqueado", color: "bg-destructive/10 text-destructive", icon: XCircle },
+};
+
+const roleLabels: Record<string, string> = {
+  admin: "Admin",
+  gestor: "Gestor",
+  vendedor: "Vendedor",
 };
 
 const AdminUsers = () => {
-  const { profile: currentProfile } = useAuth();
+  const { profile: currentProfile, user } = useAuth();
   const queryClient = useQueryClient();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -88,8 +105,47 @@ const AdminUsers = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success(newStatus === "approved" ? "Usuário aprovado!" : "Usuário rejeitado.");
+      toast.success(newStatus === "approved" ? "Usuário aprovado!" : "Usuário bloqueado.");
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    }
+  };
+
+  const changeRole = async (targetUserId: string, newRole: string) => {
+    const { error } = await supabase.rpc("change_user_role", {
+      _target_user_id: targetUserId,
+      _new_role: newRole,
+    });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Cargo atualizado!");
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    }
+  };
+
+  const removeUser = async (userId: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ status: "rejected" as any })
+      .eq("user_id", userId);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Membro removido da equipe.");
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    }
+  };
+
+  const cancelInvite = async (inviteId: string) => {
+    const { error } = await supabase
+      .from("invitations")
+      .update({ status: "cancelled" } as any)
+      .eq("id", inviteId);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Convite cancelado.");
+      queryClient.invalidateQueries({ queryKey: ["invitations"] });
     }
   };
 
@@ -98,7 +154,6 @@ const AdminUsers = () => {
     setInviteLoading(true);
 
     try {
-      // Insert invitation
       const { error } = await supabase.from("invitations").insert({
         email: inviteEmail,
         role: inviteRole,
@@ -116,14 +171,12 @@ const AdminUsers = () => {
         return;
       }
 
-      // Get account name for the email
       const { data: account } = await supabase
         .from("accounts")
         .select("name")
         .eq("id", currentProfile.account_id)
         .single();
 
-      // Send invite email via Resend
       const signupUrl = `${window.location.origin}/auth?invite=${encodeURIComponent(inviteEmail)}`;
       await supabase.functions.invoke("send-invite-email", {
         body: {
@@ -149,7 +202,8 @@ const AdminUsers = () => {
   };
 
   const pendingUsers = users.filter((u) => u.status === "pending");
-  const otherUsers = users.filter((u) => u.status !== "pending");
+  const activeUsers = users.filter((u) => u.status === "approved");
+  const blockedUsers = users.filter((u) => u.status === "rejected");
   const pendingInvites = invitations.filter((i) => i.status === "pending");
 
   if (isLoading) {
@@ -165,9 +219,11 @@ const AdminUsers = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-primary" /> Gestão de Usuários
+            <Users className="w-6 h-6 text-primary" /> Equipe
           </h1>
-          <p className="text-sm text-muted-foreground">Aprove, rejeite ou convide membros da equipe</p>
+          <p className="text-sm text-muted-foreground">
+            {activeUsers.length} membro{activeUsers.length !== 1 ? "s" : ""} ativo{activeUsers.length !== 1 ? "s" : ""}
+          </p>
         </div>
 
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
@@ -201,11 +257,12 @@ const AdminUsers = () => {
                   <SelectContent>
                     <SelectItem value="vendedor">Vendedor</SelectItem>
                     <SelectItem value="gestor">Gestor</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <p className="text-xs text-muted-foreground">
-                O convidado criará a conta e entrará automaticamente na sua equipe — sem precisar de aprovação.
+                O convidado criará a conta e entrará automaticamente na sua equipe.
               </p>
               <Button
                 className="w-full gap-2"
@@ -220,6 +277,7 @@ const AdminUsers = () => {
         </Dialog>
       </div>
 
+      {/* Pending approval */}
       {pendingUsers.length > 0 && (
         <section>
           <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
@@ -237,19 +295,10 @@ const AdminUsers = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={() => updateStatus(u.user_id, "rejected")}
-                    >
+                    <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => updateStatus(u.user_id, "rejected")}>
                       <XCircle className="w-4 h-4 mr-1" /> Rejeitar
                     </Button>
-                    <Button
-                      size="sm"
-                      className="bg-primary text-primary-foreground"
-                      onClick={() => updateStatus(u.user_id, "approved")}
-                    >
+                    <Button size="sm" className="bg-primary text-primary-foreground" onClick={() => updateStatus(u.user_id, "approved")}>
                       <CheckCircle2 className="w-4 h-4 mr-1" /> Aprovar
                     </Button>
                   </div>
@@ -260,19 +309,12 @@ const AdminUsers = () => {
         </section>
       )}
 
-      {pendingUsers.length === 0 && pendingInvites.length === 0 && (
-        <Card className="p-8 text-center border-border">
-          <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
-          <p className="font-medium text-muted-foreground">Nenhum usuário pendente</p>
-          <p className="text-sm text-muted-foreground/70 mt-1">Convide membros da equipe usando o botão acima</p>
-        </Card>
-      )}
-
+      {/* Pending invites */}
       {pendingInvites.length > 0 && (
         <section>
           <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
             <Mail className="w-5 h-5 text-primary" />
-            Convites enviados ({pendingInvites.length})
+            Convites pendentes ({pendingInvites.length})
           </h2>
           <div className="space-y-2">
             {pendingInvites.map((inv) => (
@@ -281,12 +323,17 @@ const AdminUsers = () => {
                   <div>
                     <p className="font-medium text-sm">{inv.email}</p>
                     <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                      {inv.role} · Enviado em {new Date(inv.created_at).toLocaleDateString("pt-BR")}
+                      {roleLabels[inv.role] || inv.role} · {new Date(inv.created_at).toLocaleDateString("pt-BR")}
                     </p>
                   </div>
-                  <Badge className="bg-primary/10 text-primary text-xs">
-                    <Clock className="w-3 h-3 mr-1" /> Aguardando
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-primary/10 text-primary text-xs">
+                      <Clock className="w-3 h-3 mr-1" /> Aguardando
+                    </Badge>
+                    <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => cancelInvite(inv.id)}>
+                      <XCircle className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ))}
@@ -294,13 +341,13 @@ const AdminUsers = () => {
         </section>
       )}
 
-      {otherUsers.length > 0 && (
+      {/* Active team */}
+      {activeUsers.length > 0 && (
         <section>
-          <h2 className="font-display text-lg font-semibold mb-4">Equipe ({otherUsers.length})</h2>
+          <h2 className="font-display text-lg font-semibold mb-4">Membros ativos ({activeUsers.length})</h2>
           <div className="space-y-2">
-            {otherUsers.map((u) => {
-              const cfg = statusConfig[u.status] || statusConfig.pending;
-              const StatusIcon = cfg.icon;
+            {activeUsers.map((u) => {
+              const isCurrentUser = u.user_id === user?.id;
               return (
                 <Card key={u.id} className="p-4 border-border/50">
                   <div className="flex items-center justify-between">
@@ -309,19 +356,48 @@ const AdminUsers = () => {
                         {u.full_name?.[0]?.toUpperCase() || "U"}
                       </div>
                       <div>
-                        <p className="font-medium text-sm">{u.full_name || "Sem nome"}</p>
-                        <p className="text-xs text-muted-foreground capitalize">{u.role || "vendedor"}</p>
+                        <p className="font-medium text-sm flex items-center gap-2">
+                          {u.full_name || "Sem nome"}
+                          {isCurrentUser && <Badge variant="outline" className="text-[10px] h-4">Você</Badge>}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{roleLabels[u.role || "vendedor"] || u.role}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={`${cfg.color} text-xs`}>
-                        <StatusIcon className="w-3 h-3 mr-1" />
-                        {cfg.label}
-                      </Badge>
-                      {u.status === "rejected" && (
-                        <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, "approved")}>
-                          Aprovar
-                        </Button>
+                      {!isCurrentUser && (
+                        <>
+                          <Select defaultValue={u.role || "vendedor"} onValueChange={(val) => changeRole(u.user_id, val)}>
+                            <SelectTrigger className="h-8 w-[110px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="vendedor">Vendedor</SelectItem>
+                              <SelectItem value="gestor">Gestor</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remover membro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {u.full_name || "Este usuário"} perderá acesso ao sistema. Você pode reativá-lo depois.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => removeUser(u.user_id)}>
+                                  Remover
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
                       )}
                     </div>
                   </div>
@@ -330,6 +406,42 @@ const AdminUsers = () => {
             })}
           </div>
         </section>
+      )}
+
+      {/* Blocked users */}
+      {blockedUsers.length > 0 && (
+        <section>
+          <h2 className="font-display text-lg font-semibold mb-4 text-muted-foreground">Bloqueados ({blockedUsers.length})</h2>
+          <div className="space-y-2">
+            {blockedUsers.map((u) => (
+              <Card key={u.id} className="p-4 border-border/30 opacity-60">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                      {u.full_name?.[0]?.toUpperCase() || "U"}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{u.full_name || "Sem nome"}</p>
+                      <p className="text-xs text-muted-foreground">{roleLabels[u.role || "vendedor"] || u.role}</p>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, "approved")}>
+                    Reativar
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Empty state */}
+      {activeUsers.length === 0 && pendingUsers.length === 0 && pendingInvites.length === 0 && (
+        <Card className="p-8 text-center border-border">
+          <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
+          <p className="font-medium text-muted-foreground">Nenhum membro na equipe</p>
+          <p className="text-sm text-muted-foreground/70 mt-1">Convide membros usando o botão acima</p>
+        </Card>
       )}
     </div>
   );
