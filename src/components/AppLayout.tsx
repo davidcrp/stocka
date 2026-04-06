@@ -16,6 +16,10 @@ const links = [
   { to: "/configuracoes", icon: Settings, label: "Configurações" },
 ];
 
+const adminLinks = [
+  { to: "/equipe", icon: Settings, label: "Gestão de Equipe" },
+];
+
 const AppLayout = ({ children }: { children: ReactNode }) => {
   const { profile, signOut } = useAuth();
   const { mode, toggleMode } = useTheme();
