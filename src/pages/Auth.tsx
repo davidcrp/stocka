@@ -11,6 +11,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [dealershipName, setDealershipName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -20,18 +21,41 @@ const Auth = () => {
     setLoading(true);
 
     if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
       } else {
-        navigate("/dashboard");
+        // Check if user is approved
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("status")
+          .eq("user_id", data.user.id)
+          .single();
+
+        if (profile?.status === "pending") {
+          await supabase.auth.signOut();
+          toast({
+            title: "Conta pendente",
+            description: "Sua conta está aguardando aprovação do administrador.",
+            variant: "destructive",
+          });
+        } else if (profile?.status === "rejected") {
+          await supabase.auth.signOut();
+          toast({
+            title: "Conta rejeitada",
+            description: "Sua solicitação de acesso foi negada. Entre em contato com o administrador.",
+            variant: "destructive",
+          });
+        } else {
+          navigate("/dashboard");
+        }
       }
     } else {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { full_name: fullName },
+          data: { full_name: fullName, dealership_name: dealershipName },
           emailRedirectTo: window.location.origin,
         },
       });
@@ -68,17 +92,25 @@ const Auth = () => {
             {isLogin ? "Entrar" : "Criar conta"}
           </h2>
           <p className="text-sm text-muted-foreground text-center mb-6">
-            {isLogin ? "Acesse seu painel" : "Comece a vender mais"}
+            {isLogin ? "Acesse seu painel" : "Registre sua concessionária"}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
-              <Input
-                placeholder="Nome completo"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
+              <>
+                <Input
+                  placeholder="Nome completo"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+                <Input
+                  placeholder="Nome da concessionária"
+                  value={dealershipName}
+                  onChange={(e) => setDealershipName(e.target.value)}
+                  required
+                />
+              </>
             )}
             <Input
               type="email"

@@ -2,11 +2,19 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+type ProfileData = {
+  full_name: string | null;
+  role: string | null;
+  avatar_url: string | null;
+  account_id: string | null;
+  status: string | null;
+};
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  profile: { full_name: string | null; role: string | null; avatar_url: string | null } | null;
+  profile: ProfileData | null;
   signOut: () => Promise<void>;
 };
 
@@ -24,11 +32,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<AuthContextType["profile"]>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const initialized = useRef(false);
 
   useEffect(() => {
-    // Get initial session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!initialized.current) {
         initialized.current = true;
@@ -39,7 +46,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Then listen for changes (sign in/out)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -49,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setProfile(null);
       }
       if (initialized.current) {
-        // Already past initial load, no need to touch loading
+        // Already past initial load
       } else {
         initialized.current = true;
         setLoading(false);
@@ -62,10 +68,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("full_name, role, avatar_url")
+      .select("full_name, role, avatar_url, account_id, status")
       .eq("user_id", userId)
       .single();
-    if (data) setProfile(data);
+    if (data) setProfile(data as ProfileData);
   };
 
   const signOut = async () => {

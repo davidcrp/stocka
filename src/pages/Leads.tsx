@@ -31,7 +31,7 @@ const Leads = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<LeadFormData>(emptyForm);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: leads = [], isLoading } = useQuery({
@@ -116,7 +116,7 @@ const Leads = () => {
     if (editingId) {
       ({ error } = await supabase.from("leads").update(payload).eq("id", editingId));
     } else {
-      ({ error } = await supabase.from("leads").insert({ ...payload, assigned_to: user?.id || null }));
+      ({ error } = await supabase.from("leads").insert({ ...payload, assigned_to: user?.id || null, account_id: profile?.account_id }));
     }
     setSubmitting(false);
     if (error) { toast.error(error.message); }
@@ -133,7 +133,7 @@ const Leads = () => {
     const { error } = await supabase.from("leads").update({ status: status as any, last_contact_at: new Date().toISOString() }).eq("id", id);
     if (!error) {
       await supabase.from("lead_interactions").insert({
-        lead_id: id, action_type: "status_change", message: `Status → ${statusLabels[status] || status}`, created_by: user?.id || null,
+        lead_id: id, action_type: "status_change", message: `Status → ${statusLabels[status] || status}`, created_by: user?.id || null, account_id: profile?.account_id,
       });
       invalidateAll();
     } else toast.error(error.message);
@@ -159,6 +159,7 @@ const Leads = () => {
       action_type: type === "contact" ? "whatsapp_contact" : "whatsapp_followup",
       message,
       created_by: user?.id || null,
+      account_id: profile?.account_id,
     });
 
     toast.success(type === "contact" ? "WhatsApp aberto! 📱" : "Follow-up enviado! 📤");

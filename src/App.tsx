@@ -15,20 +15,44 @@ import Trocas from "@/pages/Trocas";
 import VehicleDetail from "@/pages/VehicleDetail";
 import NotFound from "@/pages/NotFound";
 import Settings from "@/pages/Settings";
+import AdminUsers from "@/pages/AdminUsers";
 
 const queryClient = new QueryClient();
 
+const PendingScreen = () => (
+  <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="text-center max-w-sm">
+      <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+        <span className="text-3xl">⏳</span>
+      </div>
+      <h1 className="font-display text-xl font-bold mb-2">Conta pendente</h1>
+      <p className="text-sm text-muted-foreground mb-6">
+        Sua conta está aguardando aprovação do administrador. Você será notificado quando o acesso for liberado.
+      </p>
+      <button
+        onClick={() => { import("@/integrations/supabase/client").then(({ supabase }) => supabase.auth.signOut()); }}
+        className="text-sm text-primary hover:underline"
+      >
+        Sair
+      </button>
+    </div>
+  </div>
+);
+
 const ProtectedLayout = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, profile } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Carregando...</div>;
   if (!user) return <Navigate to="/auth" replace />;
+  if (profile?.status === "pending") return <PendingScreen />;
+  if (profile?.status === "rejected") return <Navigate to="/auth" replace />;
   return <AppLayout><Outlet /></AppLayout>;
 };
 
 const AuthRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, profile } = useAuth();
   if (loading) return null;
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user && profile?.status === "approved") return <Navigate to="/dashboard" replace />;
+  if (user && profile?.status === "pending") return <PendingScreen />;
   return <>{children}</>;
 };
 
@@ -51,6 +75,7 @@ const App = () => (
                 <Route path="/vendas" element={<Vendas />} />
                 <Route path="/trocas" element={<Trocas />} />
                 <Route path="/configuracoes" element={<Settings />} />
+                <Route path="/equipe" element={<AdminUsers />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

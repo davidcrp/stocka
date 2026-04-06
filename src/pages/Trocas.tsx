@@ -46,7 +46,7 @@ const Trocas = () => {
   const [tradeValue, setTradeValue] = useState(0);
   const [cashDifference, setCashDifference] = useState(0);
   const [notes, setNotes] = useState("");
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -120,12 +120,13 @@ const Trocas = () => {
       const { data: newV, error: newErr } = await supabase.from("vehicles").insert({
         brand: newVehicle.brand, model: newVehicle.model,
         year_fab: newVehicle.year_fab, year_model: newVehicle.year_model,
-        purchase_price: tradeValue, // cost basis = trade value
+        purchase_price: tradeValue,
         reconditioning_cost: newVehicle.reconditioning_cost,
         transport_cost: newVehicle.transport_cost,
         listing_price: newVehicle.listing_price || 0,
         created_by: user?.id,
         status: "em_estoque" as const,
+        account_id: profile?.account_id,
       }).select("id").single();
 
       if (newErr || !newV) {
@@ -151,6 +152,7 @@ const Trocas = () => {
       profit: estimatedProfit,
       notes: notes || null,
       created_by: user?.id,
+      account_id: profile?.account_id,
     });
 
     if (tradeErr) {
@@ -174,6 +176,7 @@ const Trocas = () => {
       commission: 0,
       payment_method: "troca",
       notes: `Troca — veículo recebido como parte do pagamento`,
+      account_id: profile?.account_id,
     });
 
     toast({ title: "Troca registrada com sucesso! 🔁" });

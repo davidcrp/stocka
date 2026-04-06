@@ -14,8 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       lead_interactions: {
         Row: {
+          account_id: string | null
           action_type: string
           created_at: string
           created_by: string | null
@@ -24,6 +43,7 @@ export type Database = {
           message: string | null
         }
         Insert: {
+          account_id?: string | null
           action_type: string
           created_at?: string
           created_by?: string | null
@@ -32,6 +52,7 @@ export type Database = {
           message?: string | null
         }
         Update: {
+          account_id?: string | null
           action_type?: string
           created_at?: string
           created_by?: string | null
@@ -40,6 +61,13 @@ export type Database = {
           message?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_interactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lead_interactions_lead_id_fkey"
             columns: ["lead_id"]
@@ -51,6 +79,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          account_id: string | null
           assigned_to: string | null
           created_at: string
           email: string | null
@@ -67,6 +96,7 @@ export type Database = {
           vehicle_id: string | null
         }
         Insert: {
+          account_id?: string | null
           assigned_to?: string | null
           created_at?: string
           email?: string | null
@@ -83,6 +113,7 @@ export type Database = {
           vehicle_id?: string | null
         }
         Update: {
+          account_id?: string | null
           assigned_to?: string | null
           created_at?: string
           email?: string | null
@@ -100,6 +131,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "leads_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "leads_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
@@ -110,39 +148,54 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_id: string | null
           avatar_url: string | null
           created_at: string
           full_name: string | null
           id: string
           phone: string | null
           role: string | null
+          status: Database["public"]["Enums"]["user_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          account_id?: string | null
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
           phone?: string | null
           role?: string | null
+          status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          account_id?: string | null
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
           phone?: string | null
           role?: string | null
+          status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sales: {
         Row: {
+          account_id: string | null
           commission: number | null
           created_at: string
           final_price: number
@@ -155,6 +208,7 @@ export type Database = {
           vehicle_id: string
         }
         Insert: {
+          account_id?: string | null
           commission?: number | null
           created_at?: string
           final_price: number
@@ -167,6 +221,7 @@ export type Database = {
           vehicle_id: string
         }
         Update: {
+          account_id?: string | null
           commission?: number | null
           created_at?: string
           final_price?: number
@@ -179,6 +234,13 @@ export type Database = {
           vehicle_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sales_lead_id_fkey"
             columns: ["lead_id"]
@@ -197,6 +259,7 @@ export type Database = {
       }
       trades: {
         Row: {
+          account_id: string | null
           cash_difference: number
           created_at: string
           created_by: string | null
@@ -208,6 +271,7 @@ export type Database = {
           vehicle_sold_id: string
         }
         Insert: {
+          account_id?: string | null
           cash_difference?: number
           created_at?: string
           created_by?: string | null
@@ -219,6 +283,7 @@ export type Database = {
           vehicle_sold_id: string
         }
         Update: {
+          account_id?: string | null
           cash_difference?: number
           created_at?: string
           created_by?: string | null
@@ -230,6 +295,13 @@ export type Database = {
           vehicle_sold_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "trades_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trades_vehicle_received_id_fkey"
             columns: ["vehicle_received_id"]
@@ -248,6 +320,7 @@ export type Database = {
       }
       vehicle_expenses: {
         Row: {
+          account_id: string | null
           amount: number
           created_at: string
           description: string | null
@@ -257,6 +330,7 @@ export type Database = {
           vehicle_id: string
         }
         Insert: {
+          account_id?: string | null
           amount: number
           created_at?: string
           description?: string | null
@@ -266,6 +340,7 @@ export type Database = {
           vehicle_id: string
         }
         Update: {
+          account_id?: string | null
           amount?: number
           created_at?: string
           description?: string | null
@@ -275,6 +350,13 @@ export type Database = {
           vehicle_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "vehicle_expenses_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vehicle_expenses_vehicle_id_fkey"
             columns: ["vehicle_id"]
@@ -286,6 +368,7 @@ export type Database = {
       }
       vehicles: {
         Row: {
+          account_id: string | null
           brand: string
           color: string | null
           created_at: string
@@ -313,6 +396,7 @@ export type Database = {
           year_model: number
         }
         Insert: {
+          account_id?: string | null
           brand: string
           color?: string | null
           created_at?: string
@@ -340,6 +424,7 @@ export type Database = {
           year_model: number
         }
         Update: {
+          account_id?: string | null
           brand?: string
           color?: string | null
           created_at?: string
@@ -366,7 +451,15 @@ export type Database = {
           year_fab?: number
           year_model?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -377,7 +470,10 @@ export type Database = {
         Args: { _new_role: string; _target_user_id: string }
         Returns: undefined
       }
+      get_user_account_id: { Args: never; Returns: string }
+      is_account_admin: { Args: never; Returns: boolean }
       is_manager_or_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_user_approved: { Args: never; Returns: boolean }
     }
     Enums: {
       lead_source:
@@ -395,6 +491,7 @@ export type Database = {
         | "negociando"
         | "fechado"
         | "perdido"
+      user_status: "pending" | "approved" | "rejected"
       vehicle_status: "em_estoque" | "vendido" | "reservado"
     }
     CompositeTypes: {
@@ -540,6 +637,7 @@ export const Constants = {
         "fechado",
         "perdido",
       ],
+      user_status: ["pending", "approved", "rejected"],
       vehicle_status: ["em_estoque", "vendido", "reservado"],
     },
   },
