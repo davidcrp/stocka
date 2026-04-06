@@ -7,8 +7,10 @@ import { Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
+  const searchParams = new URLSearchParams(window.location.search);
+  const inviteEmail = searchParams.get("invite") || "";
+  const [isLogin, setIsLogin] = useState(!inviteEmail);
+  const [email, setEmail] = useState(inviteEmail);
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [dealershipName, setDealershipName] = useState("");
