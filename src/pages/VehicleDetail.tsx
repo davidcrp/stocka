@@ -207,6 +207,14 @@ const VehicleDetail = () => {
           )}
         </div>
       </div>
+
+      <SellVehicleDialog
+        open={sellOpen}
+        onOpenChange={setSellOpen}
+        vehicle={vehicle}
+        extraCosts={expenses.reduce((s: number, e: any) => s + (e.amount || 0), 0)}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 };
