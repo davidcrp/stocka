@@ -143,21 +143,10 @@ const Estoque = () => {
     }
   };
 
-  const handleQuickSell = async (v: Vehicle) => {
-    const salePrice = v.listing_price || v.purchase_price;
-    const { error } = await supabase.from("sales").insert({
-      vehicle_id: v.id, seller_id: user?.id || null, final_price: salePrice, commission: 0, payment_method: "dinheiro", account_id: profile?.account_id,
-    });
-    if (error) {
-      toast({ title: "Erro ao registrar venda", description: error.message, variant: "destructive" });
-      return;
-    }
-    await supabase.from("vehicles").update({
-      status: "vendido" as const, sale_date: new Date().toISOString().split("T")[0], final_sale_price: salePrice,
-    }).eq("id", v.id);
-    toast({ title: `${v.brand} ${v.model} vendido! 🎉` });
-    invalidateAll();
-  };
+  const handleOpenSell = useCallback((v: Vehicle, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSellVehicle(v);
+  }, []);
 
   const handlePhotoUpload = async (vehicleId: string, files: FileList) => {
     setUploadingPhotos(true);
