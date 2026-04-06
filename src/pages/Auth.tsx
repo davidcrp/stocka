@@ -27,7 +27,7 @@ const Auth = () => {
         navigate("/dashboard");
       }
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -38,7 +38,16 @@ const Auth = () => {
       if (error) {
         toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
       } else {
-        toast({ title: "Conta criada!", description: "Verifique seu email para confirmar." });
+        // Send branded confirmation email via Resend
+        const confirmationUrl = `${window.location.origin}/auth?confirmed=true`;
+        try {
+          await supabase.functions.invoke('send-confirmation-email', {
+            body: { email, confirmationUrl, fullName },
+          });
+        } catch (emailError) {
+          console.error('Error sending confirmation email:', emailError);
+        }
+        toast({ title: "Conta criada!", description: "Verifique seu email para confirmar sua conta." });
       }
     }
     setLoading(false);
