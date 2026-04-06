@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
-  BarChart3, Car, DollarSign, LogOut, Zap, Menu, X, Settings, Sun, Moon, ArrowLeftRight,
+  BarChart3, Car, LogOut, Zap, Menu, X, Settings, Sun, Moon, ArrowLeftRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MobileBottomNav from "@/components/MobileBottomNav";
