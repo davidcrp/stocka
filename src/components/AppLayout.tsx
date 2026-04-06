@@ -3,10 +3,11 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
-  BarChart3, Car, LogOut, Zap, Menu, X, Settings, Sun, Moon, ArrowLeftRight, Users, Crown,
+  BarChart3, Car, LogOut, Menu, X, Settings, Sun, Moon, ArrowLeftRight, Users, Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import logoDark from "@/assets/logo-dark.png";
 
 const links = [
   { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
@@ -46,10 +47,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-[240px] bg-sidebar-background flex flex-col transition-transform lg:translate-x-0 border-r border-border/50 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="h-16 px-5 flex items-center gap-2.5 border-b border-border/30">
-          <div className="w-8 h-8 rounded-xl bg-gradient-profit flex items-center justify-center shadow-glow-sm">
-            <Zap className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="font-display text-lg font-bold tracking-tight">DealPulse</span>
+          <img src={logoDark} alt="CarROI" className="h-7" />
           <button className="lg:hidden ml-auto p-1" onClick={() => setSidebarOpen(false)}>
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
