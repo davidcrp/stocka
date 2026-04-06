@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ArrowLeft, Calendar, Car, DollarSign, TrendingUp, Clock, Upload, Fuel, Gauge, Palette,
+  ArrowLeft, Calendar, Car, DollarSign, TrendingUp, Clock, Upload, Fuel, Gauge, Palette, CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import SellVehicleDialog from "@/components/SellVehicleDialog";
 
 const VehicleDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,8 @@ const VehicleDetail = () => {
   const { user } = useAuth();
   const [selectedImg, setSelectedImg] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [sellOpen, setSellOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: vehicle, isLoading, refetch } = useQuery({
     queryKey: ["vehicle-detail", id],
