@@ -58,6 +58,7 @@ const Estoque = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [sellVehicle, setSellVehicle] = useState<Vehicle | null>(null);
 
   const [form, setForm] = useState(emptyForm);
 
