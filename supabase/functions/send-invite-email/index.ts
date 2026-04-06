@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       </p>
     </div>
     <div style="padding:16px 24px;border-top:1px solid #f4f4f5;text-align:center;">
-      <p style="margin:0;font-size:12px;color:#a1a1aa;">© ${new Date().getFullYear()} DealPulse. Todos os direitos reservados.</p>
+      <p style="margin:0;font-size:12px;color:#a1a1aa;">© ${new Date().getFullYear()} CarROI. Todos os direitos reservados.</p>
     </div>
   </div>
 </body>
@@ -78,9 +78,9 @@ Deno.serve(async (req) => {
         'X-Connection-Api-Key': RESEND_API_KEY,
       },
       body: JSON.stringify({
-        from: 'DealPulse <onboarding@resend.dev>',
+        from: 'CarROI <onboarding@resend.dev>',
         to: [email],
-        subject: `Você foi convidado para ${dealershipName || 'DealPulse'}`,
+        subject: `Você foi convidado para ${dealershipName || 'CarROI'}`,
         html: htmlContent,
       }),
     })
