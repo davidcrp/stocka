@@ -1,18 +1,13 @@
-import { Zap } from "lucide-react";
+import logoLight from "@/assets/logo-light.png";
 
 const FooterSection = () => {
   return (
     <footer className="border-t border-border py-12">
       <div className="container">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-profit flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-primary-foreground" />
-            </div>
-            <span className="font-display text-lg font-bold">DealPulse</span>
-          </div>
+          <img src={logoLight} alt="CarROI" className="h-7" />
           <p className="text-sm text-muted-foreground">
-            Every car. Every dollar. Every deal. — © {new Date().getFullYear()} DealPulse
+            Cada carro. Cada real. Cada negócio. — © {new Date().getFullYear()} CarROI
           </p>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-colors">Privacy</a>

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Zap } from "lucide-react";
+import logoLight from "@/assets/logo-light.png";
 import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
@@ -83,10 +83,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-profit flex items-center justify-center">
-            <Zap className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-display text-2xl font-bold">DealPulse</span>
+          <img src={logoLight} alt="CarROI" className="h-10" />
         </div>
 
         <div className="p-6 rounded-xl border border-border bg-card">

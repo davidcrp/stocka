@@ -42,14 +42,14 @@ Deno.serve(async (req) => {
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:'Inter',Arial,sans-serif;">
   <div style="max-width:480px;margin:40px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <div style="background:linear-gradient(135deg,#22C55E,#16A34A);padding:32px 24px;text-align:center;">
-      <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">DealPulse</h1>
+      <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">CarROI</h1>
       <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Convite para a equipe</p>
     </div>
     <div style="padding:32px 24px;">
       <h2 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#18181b;">Você foi convidado!</h2>
       <p style="margin:0 0 24px;font-size:15px;color:#52525b;line-height:1.6;">
         <strong>${inviterName || 'Um administrador'}</strong> convidou você para fazer parte da equipe
-        <strong>${dealershipName || 'no DealPulse'}</strong> como <strong>${roleLabel}</strong>.
+        <strong>${dealershipName || 'no CarROI'}</strong> como <strong>${roleLabel}</strong>.
       </p>
       <p style="margin:0 0 24px;font-size:15px;color:#52525b;line-height:1.6;">
         Crie sua conta para começar a usar o sistema imediatamente — sem precisar de aprovação.
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       </p>
     </div>
     <div style="padding:16px 24px;border-top:1px solid #f4f4f5;text-align:center;">
-      <p style="margin:0;font-size:12px;color:#a1a1aa;">© ${new Date().getFullYear()} DealPulse. Todos os direitos reservados.</p>
+      <p style="margin:0;font-size:12px;color:#a1a1aa;">© ${new Date().getFullYear()} CarROI. Todos os direitos reservados.</p>
     </div>
   </div>
 </body>
@@ -78,9 +78,9 @@ Deno.serve(async (req) => {
         'X-Connection-Api-Key': RESEND_API_KEY,
       },
       body: JSON.stringify({
-        from: 'DealPulse <onboarding@resend.dev>',
+        from: 'CarROI <onboarding@resend.dev>',
         to: [email],
-        subject: `Você foi convidado para ${dealershipName || 'DealPulse'}`,
+        subject: `Você foi convidado para ${dealershipName || 'CarROI'}`,
         html: htmlContent,
       }),
     })
