@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, CheckCircle2, Palette, Sun, Moon } from "lucide-react";
+import { Copy, CheckCircle2, Palette, Sun, Moon, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
@@ -30,7 +32,14 @@ const accentPresets = [
 
 const Settings = () => {
   const { mode, colors, setMode, setColors } = useTheme();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [copied, setCopied] = useState<string | null>(null);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -202,6 +211,12 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+      {/* Logout button for mobile */}
+      <div className="lg:hidden pt-4 pb-20">
+        <Button variant="destructive" className="w-full" onClick={handleSignOut}>
+          <LogOut className="w-4 h-4 mr-2" /> Sair da conta
+        </Button>
       </div>
     </div>
   );
