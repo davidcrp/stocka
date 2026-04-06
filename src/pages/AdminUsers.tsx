@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle2, XCircle, Clock, Users, ShieldCheck, UserPlus, Mail, Send, Trash2 } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Users, UserPlus, Mail, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Profile = {
@@ -50,12 +50,6 @@ type Invitation = {
   role: string;
   status: string;
   created_at: string;
-};
-
-const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  pending: { label: "Pendente", color: "bg-amber-500/10 text-amber-500", icon: Clock },
-  approved: { label: "Ativo", color: "bg-primary/10 text-primary", icon: CheckCircle2 },
-  rejected: { label: "Bloqueado", color: "bg-destructive/10 text-destructive", icon: XCircle },
 };
 
 const roleLabels: Record<string, string> = {
