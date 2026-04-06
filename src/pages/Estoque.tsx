@@ -261,15 +261,15 @@ const Estoque = () => {
                     <div><label className="text-xs text-muted-foreground mb-1 block">Modelo *</label>
                       <Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} required /></div>
                     <div><label className="text-xs text-muted-foreground mb-1 block">Ano Fabricação</label>
-                      <Input type="number" value={form.year_fab} onChange={(e) => setForm({ ...form, year_fab: +e.target.value })} /></div>
+                      <Input type="number" value={form.year_fab || ""} onChange={(e) => setForm({ ...form, year_fab: +e.target.value })} /></div>
                     <div><label className="text-xs text-muted-foreground mb-1 block">Ano Modelo</label>
-                      <Input type="number" value={form.year_model} onChange={(e) => setForm({ ...form, year_model: +e.target.value })} /></div>
+                      <Input type="number" value={form.year_model || ""} onChange={(e) => setForm({ ...form, year_model: +e.target.value })} /></div>
                     <div><label className="text-xs text-muted-foreground mb-1 block">Placa</label>
                       <Input value={form.plate} onChange={(e) => setForm({ ...form, plate: e.target.value })} /></div>
                     <div><label className="text-xs text-muted-foreground mb-1 block">Cor</label>
                       <Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} /></div>
                     <div><label className="text-xs text-muted-foreground mb-1 block">Quilometragem</label>
-                      <Input type="number" value={form.mileage} onChange={(e) => setForm({ ...form, mileage: +e.target.value })} /></div>
+                      <Input type="number" value={form.mileage || ""} onChange={(e) => setForm({ ...form, mileage: +e.target.value })} /></div>
                     <div><label className="text-xs text-muted-foreground mb-1 block">Combustível</label>
                       <Select value={form.fuel} onValueChange={(v) => setForm({ ...form, fuel: v })}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -292,11 +292,11 @@ const Estoque = () => {
                 <>
                   <div className="space-y-3">
                     <div><label className="text-xs text-muted-foreground mb-1 block">Preço de Compra (R$) *</label>
-                      <Input type="number" value={form.purchase_price} onChange={(e) => setForm({ ...form, purchase_price: +e.target.value })} required className="text-lg font-bold" /></div>
+                      <Input type="number" value={form.purchase_price || ""} onChange={(e) => setForm({ ...form, purchase_price: +e.target.value })} required className="text-lg font-bold" /></div>
                     <div><label className="text-xs text-muted-foreground mb-1 block">Custo de Recondicionamento (R$)</label>
-                      <Input type="number" value={form.reconditioning_cost} onChange={(e) => setForm({ ...form, reconditioning_cost: +e.target.value })} /></div>
+                      <Input type="number" value={form.reconditioning_cost || ""} onChange={(e) => setForm({ ...form, reconditioning_cost: +e.target.value })} /></div>
                     <div><label className="text-xs text-muted-foreground mb-1 block">Custo de Transporte (R$)</label>
-                      <Input type="number" value={form.transport_cost} onChange={(e) => setForm({ ...form, transport_cost: +e.target.value })} /></div>
+                      <Input type="number" value={form.transport_cost || ""} onChange={(e) => setForm({ ...form, transport_cost: +e.target.value })} /></div>
 
                     <div className="rounded-xl bg-secondary/30 border border-border/50 p-3">
                       <p className="text-xs text-muted-foreground">Custo Total</p>
@@ -322,7 +322,7 @@ const Estoque = () => {
                       </div>
                     )}
                     <div><label className="text-xs text-muted-foreground mb-1 block">Preço de Venda (R$)</label>
-                      <Input type="number" value={form.listing_price || suggestedPrice} onChange={(e) => setForm({ ...form, listing_price: +e.target.value })} className="text-lg font-bold" />
+                      <Input type="number" value={form.listing_price || suggestedPrice || ""} onChange={(e) => setForm({ ...form, listing_price: +e.target.value })} className="text-lg font-bold" />
                       <p className="text-[10px] text-muted-foreground mt-1">Deixe em branco para usar o preço sugerido</p></div>
                   </div>
                   <div className="flex gap-2">
