@@ -42,7 +42,7 @@ type Lead = { id: string; name: string };
 const Vendas = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -117,6 +117,7 @@ const Vendas = () => {
       commission: form.commission,
       payment_method: form.payment_method,
       notes: form.notes || null,
+      account_id: profile?.account_id,
     });
 
     if (error) {

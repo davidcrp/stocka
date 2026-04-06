@@ -54,7 +54,7 @@ const Estoque = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -118,7 +118,7 @@ const Estoque = () => {
     if (editingId) {
       ({ error } = await supabase.from("vehicles").update(payload).eq("id", editingId));
     } else {
-      ({ error } = await supabase.from("vehicles").insert({ ...payload, created_by: user?.id }));
+      ({ error } = await supabase.from("vehicles").insert({ ...payload, created_by: user?.id, account_id: profile?.account_id }));
     }
 
     setSubmitting(false);
@@ -144,7 +144,7 @@ const Estoque = () => {
   const handleQuickSell = async (v: Vehicle) => {
     const salePrice = v.listing_price || v.purchase_price;
     const { error } = await supabase.from("sales").insert({
-      vehicle_id: v.id, seller_id: user?.id || null, final_price: salePrice, commission: 0, payment_method: "dinheiro",
+      vehicle_id: v.id, seller_id: user?.id || null, final_price: salePrice, commission: 0, payment_method: "dinheiro", account_id: profile?.account_id,
     });
     if (error) {
       toast({ title: "Erro ao registrar venda", description: error.message, variant: "destructive" });
