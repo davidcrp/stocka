@@ -16,7 +16,7 @@ const links = [
 ];
 
 const adminLinks = [
-  { to: "/equipe", icon: Settings, label: "Gestão de Equipe" },
+  { to: "/equipe", icon: Users, label: "Equipe" },
 ];
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
