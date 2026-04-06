@@ -77,6 +77,33 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
               )}
             </NavLink>
           ))}
+
+          {/* Admin-only links */}
+          {(profile?.role === "admin" || profile?.role === "gestor") && (
+            <>
+              <div className="border-t border-border/30 my-3" />
+              {adminLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setSidebarOpen(false)}
+                  className={({ isActive }) =>
+                    `group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${
+                      isActive ? "bg-primary/10 text-primary shadow-glow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary shadow-glow-sm" />}
+                      <link.icon className={`w-[18px] h-[18px] transition-colors ${isActive ? "text-primary" : ""}`} />
+                      <span>{link.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </>
+          )}
         </nav>
 
         <div className="p-3 border-t border-border/30">
