@@ -197,11 +197,11 @@ const SuperAdmin = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
-              <Input
-                placeholder="Nome da concessionária"
-                value={newAccountName}
-                onChange={(e) => setNewAccountName(e.target.value)}
-              />
+                <Input
+                  placeholder="Nome do negócio"
+                  value={newAccountName}
+                  onChange={(e) => setNewAccountName(e.target.value)}
+                />
               <Button
                 className="w-full"
                 onClick={handleCreateAccount}
