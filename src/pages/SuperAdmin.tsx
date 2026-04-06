@@ -49,13 +49,6 @@ type Account = {
   created_at: string;
 };
 
-const roleLabels: Record<string, string> = {
-  admin: "Admin",
-  gestor: "Gestor",
-  gerente: "Gerente",
-  vendedor: "Vendedor",
-};
-
 const statusLabels: Record<string, { label: string; class: string }> = {
   approved: { label: "Ativo", class: "bg-primary/10 text-primary" },
   pending: { label: "Pendente", class: "bg-amber-500/10 text-amber-500" },

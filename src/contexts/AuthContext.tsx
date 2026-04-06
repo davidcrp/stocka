@@ -8,6 +8,7 @@ type ProfileData = {
   avatar_url: string | null;
   account_id: string | null;
   status: string | null;
+  is_superadmin: boolean;
 };
 
 type AuthContextType = {
