@@ -85,9 +85,16 @@ const VehicleDetail = () => {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <Button variant="ghost" size="sm" onClick={() => navigate("/estoque")} className="text-muted-foreground">
-        <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao Estoque
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/estoque")} className="text-muted-foreground">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao Estoque
+        </Button>
+        {vehicle.status === "em_estoque" && (
+          <Button size="sm" className="bg-primary text-primary-foreground gap-1.5" onClick={() => setSellOpen(true)}>
+            <CheckCircle2 className="w-4 h-4" /> Marcar como Vendido
+          </Button>
+        )}
+      </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Image Gallery */}
