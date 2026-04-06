@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
-  BarChart3, Car, LogOut, Zap, Menu, X, Settings, Sun, Moon, ArrowLeftRight, Users,
+  BarChart3, Car, LogOut, Zap, Menu, X, Settings, Sun, Moon, ArrowLeftRight, Users, Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -101,6 +101,30 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
                   )}
                 </NavLink>
               ))}
+            </>
+          )}
+
+          {/* Superadmin link */}
+          {(profile as any)?.is_superadmin && (
+            <>
+              <div className="border-t border-border/30 my-3" />
+              <NavLink
+                to="/master"
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) =>
+                  `group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${
+                    isActive ? "bg-amber-500/10 text-amber-500 shadow-glow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-amber-500 shadow-glow-sm" />}
+                    <Crown className={`w-[18px] h-[18px] transition-colors ${isActive ? "text-amber-500" : ""}`} />
+                    <span>Painel Master</span>
+                  </>
+                )}
+              </NavLink>
             </>
           )}
         </nav>

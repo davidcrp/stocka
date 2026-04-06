@@ -197,6 +197,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_superadmin: boolean
           phone: string | null
           role: string | null
           status: Database["public"]["Enums"]["user_status"]
@@ -209,6 +210,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_superadmin?: boolean
           phone?: string | null
           role?: string | null
           status?: Database["public"]["Enums"]["user_status"]
@@ -221,6 +223,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_superadmin?: boolean
           phone?: string | null
           role?: string | null
           status?: Database["public"]["Enums"]["user_status"]
@@ -510,6 +513,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_create_account: { Args: { _name: string }; Returns: string }
+      admin_update_user: {
+        Args: { _account_id: string; _role: string; _target_user_id: string }
+        Returns: undefined
+      }
       change_user_role: {
         Args: { _new_role: string; _target_user_id: string }
         Returns: undefined
@@ -517,6 +525,7 @@ export type Database = {
       get_user_account_id: { Args: never; Returns: string }
       is_account_admin: { Args: never; Returns: boolean }
       is_manager_or_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_superadmin: { Args: never; Returns: boolean }
       is_user_approved: { Args: never; Returns: boolean }
     }
     Enums: {

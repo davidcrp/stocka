@@ -14,6 +14,7 @@ import VehicleDetail from "@/pages/VehicleDetail";
 import NotFound from "@/pages/NotFound";
 import Settings from "@/pages/Settings";
 import AdminUsers from "@/pages/AdminUsers";
+import SuperAdmin from "@/pages/SuperAdmin";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
                 <Route path="/trocas" element={<Trocas />} />
                 <Route path="/configuracoes" element={<Settings />} />
                 <Route path="/equipe" element={<AdminUsers />} />
+                <Route path="/master" element={<SuperAdmin />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
