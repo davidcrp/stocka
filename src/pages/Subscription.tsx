@@ -1,74 +1,30 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { Crown, Check, Loader2, Timer, Zap } from "lucide-react";
+import { Crown, Check, Timer } from "lucide-react";
+import AsaasCheckout from "@/components/AsaasCheckout";
 import icon from "@/assets/icon.png";
+
+const allBenefits = [
+  "Gestão completa de estoque de veículos",
+  "Dashboard com métricas de lucro em tempo real",
+  "Controle de compra e venda de veículos",
+  "Gestão de trocas com cálculo de lucro",
+  "Gestão de leads e clientes",
+  "Relatórios detalhados de desempenho",
+  "Multi-usuários com controle de permissões",
+  "Integração com WhatsApp",
+  "Notificações e alertas automáticos",
+  "Personalização de tema e cores",
+  "Segurança com autenticação avançada",
+  "Suporte prioritário",
+];
 
 const Subscription = () => {
   const { profile, signOut, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const trial = useTrialCountdown();
-  const [loading, setLoading] = useState(false);
-  const [name, setName] = useState(profile?.full_name || "");
-  const [cpfCnpj, setCpfCnpj] = useState("");
-  const [phone, setPhone] = useState("");
-
-  useEffect(() => {
-    if (trial.isExpired) {
-      refreshProfile();
-    }
-  }, [trial.isExpired, refreshProfile]);
-
-  const handleSubscribe = async () => {
-    const cleanCpf = cpfCnpj.replace(/\D/g, "");
-    if (!name.trim()) {
-      toast.error("Preencha o nome completo");
-      return;
-    }
-    if (cleanCpf.length !== 11 && cleanCpf.length !== 14) {
-      toast.error("CPF deve ter 11 dígitos ou CNPJ 14 dígitos");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Sessão expirada. Faça login novamente.");
-
-      const res = await supabase.functions.invoke("asaas-create-subscription", {
-        body: { name: name.trim(), cpfCnpj: cleanCpf, phone: phone.replace(/\D/g, "") },
-      });
-
-      if (res.error) {
-        throw new Error(res.error.message || "Erro ao criar assinatura");
-      }
-
-      const data = res.data;
-      if (!data?.success) {
-        throw new Error(data?.error || "Erro ao criar assinatura");
-      }
-
-      toast.success("Assinatura criada com sucesso!");
-
-      if (data.invoiceUrl) {
-        window.open(data.invoiceUrl, "_blank");
-      }
-
-      await refreshProfile();
-      setTimeout(() => navigate("/dashboard"), 1500);
-    } catch (error: any) {
-      console.error("Subscription error:", error);
-      toast.error(error.message || "Erro ao processar assinatura. Tente novamente.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const isTrial = trial.status === "trial" && !trial.isExpired;
   const isOverdue = profile?.subscription_status === "overdue";
@@ -157,7 +113,7 @@ const Subscription = () => {
                 </div>
                 <div>
                   <h2 className="font-display font-bold text-lg">Plano Pro</h2>
-                  <p className="text-muted-foreground text-xs">Acesso completo</p>
+                  <p className="text-muted-foreground text-xs">Acesso completo • Mensal</p>
                 </div>
                 <div className="ml-auto text-right">
                   <span className="text-2xl font-bold">R$29,90</span>
@@ -165,72 +121,26 @@ const Subscription = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                {[
-                  "Gestão completa de estoque",
-                  "Dashboard com métricas de lucro",
-                  "Controle de vendas e trocas",
-                  "Gestão de leads",
-                  "Relatórios detalhados",
-                  "Multi-usuários e equipe",
-                ].map((feature) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {allBenefits.map((feature) => (
                   <div key={feature} className="flex items-center gap-2 text-sm">
                     <Check className="w-4 h-4 text-primary shrink-0" />
-                    <span>{feature}</span>
+                    <span className="text-xs">{feature}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Form */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome completo</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Seu nome completo"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cpf">CPF ou CNPJ</Label>
-                <Input
-                  id="cpf"
-                  value={cpfCnpj}
-                  onChange={(e) => setCpfCnpj(e.target.value)}
-                  placeholder="000.000.000-00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone (opcional)</Label>
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="(00) 00000-0000"
-                />
-              </div>
-            </div>
+            {/* Embedded checkout */}
+            <AsaasCheckout
+              onSuccess={() => {
+                refreshProfile();
+                navigate("/dashboard");
+              }}
+            />
 
-            <Button
-              className={`w-full h-12 text-base font-semibold ${
-                trial.isCritical ? "animate-pulse bg-destructive hover:bg-destructive/90" : ""
-              }`}
-              onClick={handleSubscribe}
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-              ) : (
-                <Zap className="w-5 h-5 mr-2" />
-              )}
-              {loading ? "Processando..." : "Ativar Agora — R$29,90/mês"}
-            </Button>
-
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Pagamento seguro via ASAAS</span>
-              <button onClick={signOut} className="text-primary hover:underline">
+            <div className="text-center">
+              <button onClick={signOut} className="text-xs text-primary hover:underline">
                 Sair da conta
               </button>
             </div>

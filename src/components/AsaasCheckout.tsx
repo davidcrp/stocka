@@ -1,0 +1,193 @@
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { Loader2, Zap, CreditCard, ArrowLeft } from "lucide-react";
+
+type AsaasCheckoutProps = {
+  onSuccess?: () => void;
+  onBack?: () => void;
+};
+
+const AsaasCheckout = ({ onSuccess, onBack }: AsaasCheckoutProps) => {
+  const { profile, refreshProfile } = useAuth();
+  const [step, setStep] = useState<"form" | "payment">("form");
+  const [loading, setLoading] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [name, setName] = useState(profile?.full_name || "");
+  const [cpfCnpj, setCpfCnpj] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const formatCpfCnpj = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 14);
+    if (digits.length <= 11) {
+      return digits
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    }
+    return digits
+      .replace(/(\d{2})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1/$2")
+      .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+  };
+
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 10) {
+      return digits
+        .replace(/(\d{2})(\d)/, "($1) $2")
+        .replace(/(\d{4})(\d)/, "$1-$2");
+    }
+    return digits
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2");
+  };
+
+  const handleSubmit = async () => {
+    const cleanCpf = cpfCnpj.replace(/\D/g, "");
+    if (!name.trim()) {
+      toast.error("Preencha o nome completo");
+      return;
+    }
+    if (cleanCpf.length !== 11 && cleanCpf.length !== 14) {
+      toast.error("CPF deve ter 11 dígitos ou CNPJ 14 dígitos");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Sessão expirada. Faça login novamente.");
+
+      const res = await supabase.functions.invoke("asaas-create-subscription", {
+        body: { name: name.trim(), cpfCnpj: cleanCpf, phone: phone.replace(/\D/g, "") },
+      });
+
+      if (res.error) throw new Error(res.error.message || "Erro ao criar assinatura");
+
+      const data = res.data;
+      if (!data?.success) throw new Error(data?.error || "Erro ao criar assinatura");
+
+      if (data.invoiceUrl) {
+        setPaymentUrl(data.invoiceUrl);
+        setStep("payment");
+        toast.success("Assinatura criada! Complete o pagamento abaixo.");
+      } else {
+        toast.success("Assinatura ativada com sucesso!");
+        await refreshProfile();
+        onSuccess?.();
+      }
+    } catch (error: any) {
+      console.error("Checkout error:", error);
+      toast.error(error.message || "Erro ao processar. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentComplete = async () => {
+    await refreshProfile();
+    toast.success("Pagamento confirmado!");
+    onSuccess?.();
+  };
+
+  if (step === "payment" && paymentUrl) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setStep("form")} className="gap-1">
+            <ArrowLeft className="w-4 h-4" /> Voltar
+          </Button>
+          <h3 className="font-display font-semibold text-base flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-primary" />
+            Realizar Pagamento
+          </h3>
+        </div>
+
+        <div className="rounded-xl border border-border overflow-hidden bg-card">
+          <iframe
+            src={paymentUrl}
+            className="w-full border-0"
+            style={{ minHeight: "600px" }}
+            title="Pagamento ASAAS"
+            allow="payment"
+          />
+        </div>
+
+        <div className="text-center space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Após realizar o pagamento, clique no botão abaixo para confirmar.
+          </p>
+          <Button className="w-full h-11 gap-2" onClick={handlePaymentComplete}>
+            <Zap className="w-5 h-5" />
+            Já realizei o pagamento
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {onBack && (
+        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
+          <ArrowLeft className="w-4 h-4" /> Voltar
+        </Button>
+      )}
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="checkout-name">Nome completo</Label>
+          <Input
+            id="checkout-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Seu nome completo"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="checkout-cpf">CPF ou CNPJ</Label>
+          <Input
+            id="checkout-cpf"
+            value={cpfCnpj}
+            onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
+            placeholder="000.000.000-00"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="checkout-phone">Telefone (opcional)</Label>
+          <Input
+            id="checkout-phone"
+            value={phone}
+            onChange={(e) => setPhone(formatPhone(e.target.value))}
+            placeholder="(00) 00000-0000"
+          />
+        </div>
+      </div>
+
+      <Button
+        className="w-full h-12 text-base font-semibold gap-2"
+        onClick={handleSubmit}
+        disabled={loading}
+      >
+        {loading ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <Zap className="w-5 h-5" />
+        )}
+        {loading ? "Processando..." : "Ativar Agora — R$29,90/mês"}
+      </Button>
+
+      <p className="text-xs text-center text-muted-foreground">
+        Pagamento seguro via ASAAS • Cobrança mensal de R$29,90
+      </p>
+    </div>
+  );
+};
+
+export default AsaasCheckout;

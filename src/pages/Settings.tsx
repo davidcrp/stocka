@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Copy, CheckCircle2, Palette, Sun, Moon, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import PlanSection from "@/components/PlanSection";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 const WEBHOOK_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/whatsapp-webhook`;
@@ -62,8 +63,11 @@ const Settings = () => {
     <div className="space-y-8 max-w-3xl">
       <div>
         <h1 className="font-display text-2xl font-bold">Configurações</h1>
-        <p className="text-sm text-muted-foreground">Personalize o sistema e configure integrações</p>
+        <p className="text-sm text-muted-foreground">Personalize o sistema, gerencie seu plano e configure integrações</p>
       </div>
+
+      {/* Plan Section */}
+      <PlanSection />
 
       {/* Theme Section */}
       <div className="space-y-4">
