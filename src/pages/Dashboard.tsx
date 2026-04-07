@@ -7,7 +7,7 @@ import { differenceInDays, format, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   TrendingUp, TrendingDown, Package, ArrowLeftRight, BarChart3,
-  ChevronRight, ShieldAlert,
+  ChevronRight, ShieldAlert, Clock, AlertTriangle,
   CheckCircle2, Image as ImageIcon, Minus,
 } from "lucide-react";
 import {
