@@ -9,6 +9,7 @@ type ProfileData = {
   account_id: string | null;
   status: string | null;
   is_superadmin: boolean;
+  subscription_status: string | null;
 };
 
 type AuthContextType = {
@@ -69,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("full_name, role, avatar_url, account_id, status, is_superadmin")
+      .select("full_name, role, avatar_url, account_id, status, is_superadmin, subscription_status")
       .eq("user_id", userId)
       .single();
     if (data) setProfile(data as ProfileData);
