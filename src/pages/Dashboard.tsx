@@ -165,20 +165,6 @@ const Dashboard = () => {
   const { labels } = useBusiness();
   const { profile } = useAuth();
 
-  // Fetch subscription for trial countdown
-  const { data: subscription } = useQuery({
-    queryKey: ["my-subscription"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("subscriptions")
-        .select("status, trial_ends_at")
-        .eq("user_id", profile?.account_id ? "" : "")
-        .maybeSingle();
-      return data;
-    },
-    enabled: false, // disabled, we use the one below
-  });
-
   const { data: subData } = useQuery({
     queryKey: ["my-subscription-data"],
     queryFn: async () => {
