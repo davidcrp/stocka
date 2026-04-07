@@ -334,7 +334,7 @@ const Dashboard = () => {
       )}
 
       {/* SECTION 3 — Key metrics */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6 lg:gap-y-0">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-x-6">
         <MetricBlock label="Em estoque" value={String(stats.inStock)} sub={`${fmtK(stats.totalInvested)} investido`} />
         <MetricBlock label="Lucro potencial" value={fmtK(stats.totalProfitPotential)} sub={`Margem média ${stats.avgMargin.toFixed(0)}%`} highlight={stats.totalProfitPotential > 0} />
         <MetricBlock label="Dias p/ vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "—"} sub={stats.avgDaysToSell > 30 ? "Acima do ideal" : "Saudável"} warn={stats.avgDaysToSell > 30} />
@@ -428,8 +428,8 @@ const Dashboard = () => {
         </section>
       )}
 
-      {/* SECTION 7 — Revenue chart */}
-      <section>
+      {/* SECTION 7 — Revenue chart (hidden on small mobile for speed) */}
+      <section className="hidden sm:block">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-lg lg:text-xl font-bold">Faturamento e lucro</h2>
           <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
