@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
-  BarChart3, Package, LogOut, Menu, X, Settings, Sun, Moon, ArrowLeftRight, Users, Crown,
+  BarChart3, Package, LogOut, Menu, X, Settings, Sun, Moon, ArrowLeftRight, Users, Crown, CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -15,6 +15,7 @@ const links = [
   { to: "/estoque", icon: Package, label: "Estoque" },
   { to: "/trocas", icon: ArrowLeftRight, label: "Trocas" },
   { to: "/configuracoes", icon: Settings, label: "Configurações" },
+  { to: "/assinatura", icon: CreditCard, label: "Meu Plano" },
 ];
 
 const adminLinks = [
