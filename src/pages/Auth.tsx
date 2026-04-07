@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getBaseUrl } from "@/lib/constants";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,7 @@ const Auth = () => {
         password,
         options: {
           data: { full_name: fullName, dealership_name: businessName, business_type: businessType },
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: getBaseUrl(),
         },
       });
       if (error) {
@@ -91,7 +92,7 @@ const Auth = () => {
         }
 
         try {
-          const confirmationUrl = `${window.location.origin}/auth?confirmed=true`;
+          const confirmationUrl = `${getBaseUrl()}/auth?confirmed=true`;
           await supabase.functions.invoke('send-confirmation-email', {
             body: { email, confirmationUrl, fullName },
           });

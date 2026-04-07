@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getBaseUrl } from "@/lib/constants";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -171,7 +172,7 @@ const AdminUsers = () => {
         .eq("id", currentProfile.account_id)
         .single();
 
-      const signupUrl = `${window.location.origin}/auth?invite=${encodeURIComponent(inviteEmail)}`;
+      const signupUrl = `${getBaseUrl()}/auth?invite=${encodeURIComponent(inviteEmail)}`;
       await supabase.functions.invoke("send-invite-email", {
         body: {
           email: inviteEmail,
