@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { differenceInDays, format, startOfMonth, subMonths } from "date-fns";
+import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 import { ptBR } from "date-fns/locale";
 import {
   TrendingUp, TrendingDown, Package, ArrowLeftRight, BarChart3,
