@@ -7,17 +7,17 @@ import AsaasCheckout from "@/components/AsaasCheckout";
 import icon from "@/assets/icon.png";
 
 const allBenefits = [
-  "Gestão completa de estoque de veículos",
-  "Dashboard com métricas de lucro em tempo real",
-  "Controle de compra e venda de veículos",
-  "Gestão de trocas com cálculo de lucro",
-  "Gestão de leads e clientes",
+  "Gestão completa de estoque e produtos",
+  "Dashboard com métricas em tempo real",
+  "Controle de compras e vendas",
+  "Gestão de trocas e negociações",
+  "CRM de leads e clientes",
   "Relatórios detalhados de desempenho",
-  "Multi-usuários com controle de permissões",
+  "Multi-usuários com permissões",
   "Integração com WhatsApp",
-  "Notificações e alertas automáticos",
+  "Notificações automáticas",
   "Personalização de tema e cores",
-  "Segurança com autenticação avançada",
+  "Segurança avançada com criptografia",
   "Suporte prioritário",
 ];
 
@@ -31,7 +31,7 @@ const Subscription = () => {
   const isActive = profile?.subscription_status === "active";
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-background px-4 py-6 pb-24 overflow-y-auto">
       <div className="w-full max-w-lg">
         {/* Back button */}
         <Button

@@ -13,17 +13,17 @@ import {
 } from "lucide-react";
 
 const allBenefits = [
-  { icon: Package, label: "Gestão completa de estoque de veículos" },
-  { icon: BarChart3, label: "Dashboard com métricas de lucro em tempo real" },
-  { icon: Car, label: "Controle de compra e venda de veículos" },
-  { icon: ArrowLeftRight, label: "Gestão de trocas com cálculo de lucro" },
-  { icon: Users, label: "Gestão de leads e clientes" },
+  { icon: Package, label: "Gestão completa de estoque e produtos" },
+  { icon: BarChart3, label: "Dashboard com métricas em tempo real" },
+  { icon: Car, label: "Controle de compras e vendas" },
+  { icon: ArrowLeftRight, label: "Gestão de trocas e negociações" },
+  { icon: Users, label: "CRM de leads e clientes" },
   { icon: FileText, label: "Relatórios detalhados de desempenho" },
-  { icon: Users, label: "Multi-usuários com controle de permissões" },
+  { icon: Users, label: "Multi-usuários com permissões" },
   { icon: MessageSquare, label: "Integração com WhatsApp" },
-  { icon: Bell, label: "Notificações e alertas automáticos" },
+  { icon: Bell, label: "Notificações automáticas" },
   { icon: Palette, label: "Personalização de tema e cores" },
-  { icon: Shield, label: "Segurança com autenticação e RLS" },
+  { icon: Shield, label: "Segurança avançada com criptografia" },
   { icon: Crown, label: "Suporte prioritário" },
 ];
 
