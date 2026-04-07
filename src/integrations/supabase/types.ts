@@ -587,6 +587,7 @@ export type Database = {
         Args: { _new_role: string; _target_user_id: string }
         Returns: undefined
       }
+      expire_trials: { Args: never; Returns: undefined }
       get_user_account_id: { Args: never; Returns: string }
       is_account_admin: { Args: never; Returns: boolean }
       is_manager_or_admin: { Args: { _user_id: string }; Returns: boolean }
