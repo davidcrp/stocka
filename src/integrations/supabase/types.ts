@@ -207,6 +207,7 @@ export type Database = {
           phone: string | null
           role: string | null
           status: Database["public"]["Enums"]["user_status"]
+          subscription_status: Database["public"]["Enums"]["subscription_status"]
           updated_at: string
           user_id: string
         }
@@ -220,6 +221,7 @@ export type Database = {
           phone?: string | null
           role?: string | null
           status?: Database["public"]["Enums"]["user_status"]
+          subscription_status?: Database["public"]["Enums"]["subscription_status"]
           updated_at?: string
           user_id: string
         }
@@ -233,6 +235,7 @@ export type Database = {
           phone?: string | null
           role?: string | null
           status?: Database["public"]["Enums"]["user_status"]
+          subscription_status?: Database["public"]["Enums"]["subscription_status"]
           updated_at?: string
           user_id?: string
         }
@@ -306,6 +309,56 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          account_id: string | null
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
+          created_at: string
+          current_period_end: string | null
+          id: string
+          plan: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -556,6 +609,7 @@ export type Database = {
         | "negociando"
         | "fechado"
         | "perdido"
+      subscription_status: "inactive" | "trial" | "active" | "overdue"
       user_status: "pending" | "approved" | "rejected"
       vehicle_status: "em_estoque" | "vendido" | "reservado"
     }
@@ -702,6 +756,7 @@ export const Constants = {
         "fechado",
         "perdido",
       ],
+      subscription_status: ["inactive", "trial", "active", "overdue"],
       user_status: ["pending", "approved", "rejected"],
       vehicle_status: ["em_estoque", "vendido", "reservado"],
     },
