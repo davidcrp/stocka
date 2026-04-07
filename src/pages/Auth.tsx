@@ -67,7 +67,7 @@ const Auth = () => {
         password,
         options: {
           data: { full_name: fullName, dealership_name: businessName, business_type: businessType },
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: getBaseUrl(),
         },
       });
       if (error) {
@@ -91,7 +91,7 @@ const Auth = () => {
         }
 
         try {
-          const confirmationUrl = `${window.location.origin}/auth?confirmed=true`;
+          const confirmationUrl = `${getBaseUrl()}/auth?confirmed=true`;
           await supabase.functions.invoke('send-confirmation-email', {
             body: { email, confirmationUrl, fullName },
           });

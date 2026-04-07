@@ -171,7 +171,7 @@ const AdminUsers = () => {
         .eq("id", currentProfile.account_id)
         .single();
 
-      const signupUrl = `${window.location.origin}/auth?invite=${encodeURIComponent(inviteEmail)}`;
+      const signupUrl = `${getBaseUrl()}/auth?invite=${encodeURIComponent(inviteEmail)}`;
       await supabase.functions.invoke("send-invite-email", {
         body: {
           email: inviteEmail,
