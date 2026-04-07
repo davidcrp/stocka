@@ -529,9 +529,9 @@ const Dashboard = () => {
 const MetricBlock = ({ label, value, sub, highlight, warn }: {
   label: string; value: string; sub: string; highlight?: boolean; warn?: boolean;
 }) => (
-  <div>
+  <div className="rounded-2xl bg-card/50 border border-border/30 p-4 lg:p-0 lg:bg-transparent lg:border-0">
     <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium mb-1">{label}</p>
-    <p className={`font-display text-2xl lg:text-3xl font-black tracking-tight ${
+    <p className={`font-display text-xl md:text-2xl lg:text-3xl font-black tracking-tight ${
       highlight ? "text-primary" : warn ? "text-destructive" : ""
     }`}>{value}</p>
     <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>
@@ -572,7 +572,7 @@ const ItemRow = ({ item: v, onNavigate, onMarkSold, onReducePrice, isSelling, is
           <p className="text-[11px] text-muted-foreground mt-0.5">{v.suggestion}</p>
         </div>
 
-        <div className="flex items-center gap-4 mt-2">
+        <div className="flex items-center gap-4 mt-2 flex-wrap">
           <div>
             <p className="text-[10px] text-muted-foreground">Lucro</p>
             <p className={`text-sm font-bold ${v.profit >= 0 ? "text-primary" : "text-destructive"}`}>
@@ -584,11 +584,11 @@ const ItemRow = ({ item: v, onNavigate, onMarkSold, onReducePrice, isSelling, is
             <p className="text-sm font-bold">{v.margin.toFixed(0)}%</p>
           </div>
           <div className="ml-auto flex gap-1.5">
-            <Button size="sm" variant="outline" className="text-[11px] h-7 px-2.5" disabled={isReducing}
+            <Button size="sm" variant="outline" className="text-[11px] h-9 min-h-[44px] px-3 md:h-7 md:min-h-0 md:px-2.5" disabled={isReducing}
               onClick={(e) => { e.stopPropagation(); onReducePrice(); }}>
               <Minus className="w-3 h-3 mr-1" /> 10%
             </Button>
-            <Button size="sm" className="text-[11px] h-7 px-2.5" disabled={isSelling}
+            <Button size="sm" className="text-[11px] h-9 min-h-[44px] px-3 md:h-7 md:min-h-0 md:px-2.5" disabled={isSelling}
               onClick={(e) => { e.stopPropagation(); onMarkSold(); }}>
               <CheckCircle2 className="w-3 h-3 mr-1" /> Vendido
             </Button>
