@@ -112,9 +112,9 @@ const SubscriptionRoute = () => {
   const { user, loading, profile } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
-  // If already subscribed, go to dashboard
+  // Only redirect if actively subscribed (not trial — allow trial users to subscribe early)
   const subStatus = profile?.subscription_status;
-  if (profile?.is_superadmin || subStatus === "active" || subStatus === "trial") {
+  if (profile?.is_superadmin || subStatus === "active") {
     return <Navigate to="/dashboard" replace />;
   }
   return <Subscription />;
