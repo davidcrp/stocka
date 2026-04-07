@@ -1,1 +1,5 @@
 project_id = "kposanbebrvmeqdeadqg"
+
+[auth]
+site_url = "https://dashboard-concessionaria.vercel.app"
+additional_redirect_urls = ["https://dashboard-concessionaria.vercel.app"]
