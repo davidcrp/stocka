@@ -1,11 +1,11 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Package, Plus, ArrowLeftRight, Settings } from "lucide-react";
+import { BarChart3, Package, Plus, CreditCard, Settings } from "lucide-react";
 
 const tabs = [
   { to: "/dashboard", icon: BarChart3, label: "Painel" },
   { to: "/estoque", icon: Package, label: "Estoque" },
   { to: "__fab__", icon: Plus, label: "Novo" },
-  { to: "/trocas", icon: ArrowLeftRight, label: "Trocas" },
+  { to: "/assinatura", icon: CreditCard, label: "Plano" },
   { to: "/configuracoes", icon: Settings, label: "Config" },
 ];
 
@@ -14,8 +14,9 @@ const MobileBottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-card/95 backdrop-blur-xl border-t border-border/50 safe-area-bottom">
-      <div className="flex items-end justify-around h-16 px-1">
+    <nav className="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-card/95 backdrop-blur-xl border-t border-border/50"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div className="flex items-end justify-around h-[68px] px-1">
         {tabs.map((tab) => {
           if (tab.to === "__fab__") {
             return (
@@ -36,7 +37,7 @@ const MobileBottomNav = () => {
             <button
               key={tab.to}
               onClick={() => navigate(tab.to)}
-              className={`flex flex-col items-center justify-center gap-0.5 py-2 px-3 min-w-[60px] transition-colors ${
+              className={`flex flex-col items-center justify-center gap-0.5 py-2 px-3 min-w-[60px] min-h-[48px] transition-colors active:scale-95 ${
                 isActive ? "text-primary" : "text-muted-foreground"
               }`}
             >
