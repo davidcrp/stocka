@@ -49,7 +49,7 @@ const ProtectedLayout = () => {
 
   // Subscription check — superadmins bypass
   const subStatus = profile?.subscription_status;
-  if (!profile?.is_superadmin && subStatus !== "active" && subStatus !== "trial") {
+  if (!profile?.is_superadmin && subStatus !== "active") {
     return <Navigate to="/assinatura" replace />;
   }
 
@@ -61,7 +61,7 @@ const AuthRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) return null;
   if (user && profile?.status === "approved") {
     const subStatus = profile?.subscription_status;
-    if (!profile?.is_superadmin && subStatus !== "active" && subStatus !== "trial") {
+    if (!profile?.is_superadmin && subStatus !== "active") {
       return <Navigate to="/assinatura" replace />;
     }
     return <Navigate to="/dashboard" replace />;
@@ -76,7 +76,7 @@ const SubscriptionRoute = () => {
   if (!user) return <Navigate to="/auth" replace />;
   // If already subscribed, go to dashboard
   const subStatus = profile?.subscription_status;
-  if (profile?.is_superadmin || subStatus === "active" || subStatus === "trial") {
+  if (profile?.is_superadmin || subStatus === "active") {
     return <Navigate to="/dashboard" replace />;
   }
   return <Subscription />;
