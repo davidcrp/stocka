@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Zap, CreditCard, ArrowLeft } from "lucide-react";
+import { Loader2, Zap, CreditCard, ArrowLeft, Clock, RefreshCw } from "lucide-react";
 
 type AsaasCheckoutProps = {
   onSuccess?: () => void;
@@ -14,12 +14,31 @@ type AsaasCheckoutProps = {
 
 const AsaasCheckout = ({ onSuccess, onBack }: AsaasCheckoutProps) => {
   const { profile, refreshProfile } = useAuth();
-  const [step, setStep] = useState<"form" | "payment">("form");
+  const [step, setStep] = useState<"form" | "payment" | "waiting">("form");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [name, setName] = useState(profile?.full_name || "");
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [phone, setPhone] = useState("");
+
+  // Check if user already has a pending subscription (created but not paid)
+  useEffect(() => {
+    const checkExisting = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: sub } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (sub?.asaas_subscription_id && sub.status === "inactive") {
+        setStep("waiting");
+      }
+    };
+    checkExisting();
+  }, []);
 
   const formatCpfCnpj = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 14);
@@ -78,9 +97,9 @@ const AsaasCheckout = ({ onSuccess, onBack }: AsaasCheckoutProps) => {
         setStep("payment");
         toast.success("Assinatura criada! Complete o pagamento abaixo.");
       } else {
-        toast.success("Assinatura ativada com sucesso!");
-        await refreshProfile();
-        onSuccess?.();
+        // No invoice URL — show waiting state
+        setStep("waiting");
+        toast.info("Assinatura criada! Aguardando confirmação de pagamento.");
       }
     } catch (error: any) {
       console.error("Checkout error:", error);
@@ -90,12 +109,78 @@ const AsaasCheckout = ({ onSuccess, onBack }: AsaasCheckoutProps) => {
     }
   };
 
-  const handlePaymentComplete = async () => {
-    await refreshProfile();
-    toast.success("Pagamento confirmado!");
-    onSuccess?.();
+  const handleCheckPayment = async () => {
+    setChecking(true);
+    try {
+      await refreshProfile();
+      // Re-check profile status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: freshProfile } = await supabase
+        .from("profiles")
+        .select("subscription_status")
+        .eq("user_id", user.id)
+        .single();
+
+      if (freshProfile?.subscription_status === "active") {
+        toast.success("Pagamento confirmado! Bem-vindo ao Plano Pro!");
+        onSuccess?.();
+      } else {
+        toast.info("Pagamento ainda não confirmado. Aguarde alguns instantes.");
+      }
+    } catch (e) {
+      toast.error("Erro ao verificar. Tente novamente.");
+    } finally {
+      setChecking(false);
+    }
   };
 
+  // Waiting for payment confirmation state
+  if (step === "waiting") {
+    return (
+      <div className="space-y-5">
+        <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/5 p-6 text-center space-y-4">
+          <div className="w-14 h-14 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto">
+            <Clock className="w-7 h-7 text-amber-500" />
+          </div>
+          <div>
+            <h3 className="font-display font-bold text-lg text-amber-400">Aguardando Pagamento</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Sua assinatura foi criada. Realize o pagamento para liberar o acesso completo à plataforma.
+            </p>
+          </div>
+        </div>
+
+        <Button
+          className="w-full h-12 text-base font-semibold gap-2"
+          onClick={handleCheckPayment}
+          disabled={checking}
+        >
+          {checking ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <RefreshCw className="w-5 h-5" />
+          )}
+          {checking ? "Verificando..." : "Verificar Pagamento"}
+        </Button>
+
+        <Button
+          variant="outline"
+          className="w-full h-11 gap-2"
+          onClick={() => setStep("form")}
+        >
+          <CreditCard className="w-4 h-4" />
+          Gerar novo link de pagamento
+        </Button>
+
+        <p className="text-xs text-center text-muted-foreground">
+          O acesso será liberado automaticamente após a confirmação do pagamento pelo ASAAS.
+        </p>
+      </div>
+    );
+  }
+
+  // Payment iframe state
   if (step === "payment" && paymentUrl) {
     return (
       <div className="space-y-4">
@@ -121,17 +206,22 @@ const AsaasCheckout = ({ onSuccess, onBack }: AsaasCheckoutProps) => {
 
         <div className="text-center space-y-3">
           <p className="text-xs text-muted-foreground">
-            Após realizar o pagamento, clique no botão abaixo para confirmar.
+            Após realizar o pagamento, clique no botão abaixo para verificar.
           </p>
-          <Button className="w-full h-11 gap-2" onClick={handlePaymentComplete}>
-            <Zap className="w-5 h-5" />
-            Já realizei o pagamento
+          <Button className="w-full h-11 gap-2" onClick={handleCheckPayment} disabled={checking}>
+            {checking ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-5 h-5" />
+            )}
+            {checking ? "Verificando..." : "Verificar Pagamento"}
           </Button>
         </div>
       </div>
     );
   }
 
+  // Form state
   return (
     <div className="space-y-5">
       {onBack && (
