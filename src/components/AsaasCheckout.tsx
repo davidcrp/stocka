@@ -94,10 +94,11 @@ const AsaasCheckout = ({ onSuccess, onBack }: AsaasCheckoutProps) => {
 
       if (data.invoiceUrl) {
         setPaymentUrl(data.invoiceUrl);
-        setStep("payment");
-        toast.success("Assinatura criada! Complete o pagamento abaixo.");
+        // Open payment in new tab since ASAAS blocks iframes
+        window.open(data.invoiceUrl, "_blank");
+        setStep("waiting");
+        toast.success("Assinatura criada! Realize o pagamento na aba que foi aberta.");
       } else {
-        // No invoice URL — show waiting state
         setStep("waiting");
         toast.info("Assinatura criada! Aguardando confirmação de pagamento.");
       }
@@ -164,12 +165,22 @@ const AsaasCheckout = ({ onSuccess, onBack }: AsaasCheckoutProps) => {
           {checking ? "Verificando..." : "Verificar Pagamento"}
         </Button>
 
+        {paymentUrl && (
+          <Button
+            variant="outline"
+            className="w-full h-11 gap-2"
+            onClick={() => window.open(paymentUrl, "_blank")}
+          >
+            <CreditCard className="w-4 h-4" />
+            Abrir página de pagamento
+          </Button>
+        )}
+
         <Button
-          variant="outline"
+          variant="ghost"
           className="w-full h-11 gap-2"
           onClick={() => setStep("form")}
         >
-          <CreditCard className="w-4 h-4" />
           Gerar novo link de pagamento
         </Button>
 
@@ -180,46 +191,8 @@ const AsaasCheckout = ({ onSuccess, onBack }: AsaasCheckoutProps) => {
     );
   }
 
-  // Payment iframe state
-  if (step === "payment" && paymentUrl) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setStep("form")} className="gap-1">
-            <ArrowLeft className="w-4 h-4" /> Voltar
-          </Button>
-          <h3 className="font-display font-semibold text-base flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-primary" />
-            Realizar Pagamento
-          </h3>
-        </div>
-
-        <div className="rounded-xl border border-border overflow-hidden bg-card">
-          <iframe
-            src={paymentUrl}
-            className="w-full border-0"
-            style={{ minHeight: "600px" }}
-            title="Pagamento ASAAS"
-            allow="payment"
-          />
-        </div>
-
-        <div className="text-center space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Após realizar o pagamento, clique no botão abaixo para verificar.
-          </p>
-          <Button className="w-full h-11 gap-2" onClick={handleCheckPayment} disabled={checking}>
-            {checking ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <RefreshCw className="w-5 h-5" />
-            )}
-            {checking ? "Verificando..." : "Verificar Pagamento"}
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // This step is no longer used since we go directly to "waiting"
+  // Kept as fallback - opens payment in new tab
 
   // Form state
   return (
