@@ -275,6 +275,7 @@ const SuperAdmin = () => {
                 <TableHead>Loja</TableHead>
                 <TableHead>Cargo</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Assinatura</TableHead>
                 <TableHead className="w-[80px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -339,6 +340,22 @@ const SuperAdmin = () => {
                     </TableCell>
                     <TableCell>
                       <Badge className={`${sts.class} text-xs`}>{sts.label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {!u.is_superadmin && (
+                        <Button
+                          size="sm"
+                          variant={u.subscription_status === "active" ? "destructive" : "default"}
+                          className="h-7 text-xs gap-1"
+                          onClick={() => toggleSubscription(u)}
+                        >
+                          {u.subscription_status === "active" ? (
+                            <><ShieldOff className="w-3 h-3" /> Desativar</>
+                          ) : (
+                            <><ShieldCheck className="w-3 h-3" /> Ativar</>
+                          )}
+                        </Button>
+                      )}
                     </TableCell>
                     <TableCell>
                       {hasChanges && (
