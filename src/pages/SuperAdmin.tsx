@@ -151,6 +151,20 @@ const SuperAdmin = () => {
     }
   };
 
+  const toggleSubscription = async (user: UserProfile) => {
+    const newStatus = user.subscription_status === "active" ? "inactive" : "active";
+    const { error } = await supabase
+      .from("profiles")
+      .update({ subscription_status: newStatus } as any)
+      .eq("user_id", user.user_id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(`Assinatura de ${user.full_name || "Usuário"} ${newStatus === "active" ? "ativada" : "desativada"}!`);
+      queryClient.invalidateQueries({ queryKey: ["superadmin-users"] });
+    }
+  };
+
   const getAccountName = (accountId: string | null) => {
     if (!accountId) return "Sem loja";
     return allAccounts.find((a) => a.id === accountId)?.name || "Desconhecida";
