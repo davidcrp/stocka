@@ -230,7 +230,7 @@ const Dashboard = () => {
   const profitPositive = profitChangeNum >= 0;
 
   return (
-    <div className="space-y-10 lg:space-y-14 max-w-6xl">
+    <div className="space-y-8 md:space-y-10 lg:space-y-14 max-w-6xl">
 
       {/* SUBSCRIPTION BANNER */}
       {trial.status === "trial" && !trial.isExpired && (
@@ -276,13 +276,15 @@ const Dashboard = () => {
           <ChevronRight className="w-4 h-4 text-destructive/40 group-hover:text-destructive transition-colors shrink-0" />
         </button>
       )}
+
+      {/* HERO SECTION — Profit */}
       <section>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
           {format(new Date(), "MMMM yyyy", { locale: ptBR })}
         </p>
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div className="flex flex-col gap-4">
           <div>
-            <h1 className="font-display text-[2.5rem] lg:text-6xl font-black tracking-tight leading-none">
+            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-none">
               {fmt(stats.thisMonthProfit)}
             </h1>
             <div className="flex items-center gap-2.5 mt-3">
@@ -297,15 +299,16 @@ const Dashboard = () => {
               <span className="text-xs text-muted-foreground">lucro vs mês anterior</span>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigate("/estoque")} className="text-xs h-9">
-              <Package className="w-3.5 h-3.5 mr-1.5" /> Ver {labels.stockPage}
+          {/* Quick actions — larger on mobile */}
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            <Button variant="outline" onClick={() => navigate("/estoque")} className="text-xs h-11 min-h-[44px] px-4 shrink-0">
+              <Package className="w-4 h-4 mr-1.5" /> Ver {labels.stockPage}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate("/estoque")} className="text-xs h-9">
-              <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Nova Venda
+            <Button variant="outline" onClick={() => navigate("/estoque")} className="text-xs h-11 min-h-[44px] px-4 shrink-0">
+              <CheckCircle2 className="w-4 h-4 mr-1.5" /> Nova Venda
             </Button>
-            <Button size="sm" onClick={() => navigate("/trocas")} className="text-xs h-9">
-              <ArrowLeftRight className="w-3.5 h-3.5 mr-1.5" /> Nova Troca
+            <Button onClick={() => navigate("/trocas")} className="text-xs h-11 min-h-[44px] px-4 shrink-0">
+              <ArrowLeftRight className="w-4 h-4 mr-1.5" /> Nova Troca
             </Button>
           </div>
         </div>
@@ -331,7 +334,7 @@ const Dashboard = () => {
       )}
 
       {/* SECTION 3 — Key metrics */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6 lg:gap-y-0">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-x-6">
         <MetricBlock label="Em estoque" value={String(stats.inStock)} sub={`${fmtK(stats.totalInvested)} investido`} />
         <MetricBlock label="Lucro potencial" value={fmtK(stats.totalProfitPotential)} sub={`Margem média ${stats.avgMargin.toFixed(0)}%`} highlight={stats.totalProfitPotential > 0} />
         <MetricBlock label="Dias p/ vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "—"} sub={stats.avgDaysToSell > 30 ? "Acima do ideal" : "Saudável"} warn={stats.avgDaysToSell > 30} />
@@ -425,8 +428,8 @@ const Dashboard = () => {
         </section>
       )}
 
-      {/* SECTION 7 — Revenue chart */}
-      <section>
+      {/* SECTION 7 — Revenue chart (hidden on small mobile for speed) */}
+      <section className="hidden sm:block">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-lg lg:text-xl font-bold">Faturamento e lucro</h2>
           <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
@@ -526,9 +529,9 @@ const Dashboard = () => {
 const MetricBlock = ({ label, value, sub, highlight, warn }: {
   label: string; value: string; sub: string; highlight?: boolean; warn?: boolean;
 }) => (
-  <div>
+  <div className="rounded-2xl bg-card/50 border border-border/30 p-4 lg:p-0 lg:bg-transparent lg:border-0">
     <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium mb-1">{label}</p>
-    <p className={`font-display text-2xl lg:text-3xl font-black tracking-tight ${
+    <p className={`font-display text-xl md:text-2xl lg:text-3xl font-black tracking-tight ${
       highlight ? "text-primary" : warn ? "text-destructive" : ""
     }`}>{value}</p>
     <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>
@@ -569,7 +572,7 @@ const ItemRow = ({ item: v, onNavigate, onMarkSold, onReducePrice, isSelling, is
           <p className="text-[11px] text-muted-foreground mt-0.5">{v.suggestion}</p>
         </div>
 
-        <div className="flex items-center gap-4 mt-2">
+        <div className="flex items-center gap-4 mt-2 flex-wrap">
           <div>
             <p className="text-[10px] text-muted-foreground">Lucro</p>
             <p className={`text-sm font-bold ${v.profit >= 0 ? "text-primary" : "text-destructive"}`}>
@@ -581,11 +584,11 @@ const ItemRow = ({ item: v, onNavigate, onMarkSold, onReducePrice, isSelling, is
             <p className="text-sm font-bold">{v.margin.toFixed(0)}%</p>
           </div>
           <div className="ml-auto flex gap-1.5">
-            <Button size="sm" variant="outline" className="text-[11px] h-7 px-2.5" disabled={isReducing}
+            <Button size="sm" variant="outline" className="text-[11px] h-9 min-h-[44px] px-3 md:h-7 md:min-h-0 md:px-2.5" disabled={isReducing}
               onClick={(e) => { e.stopPropagation(); onReducePrice(); }}>
               <Minus className="w-3 h-3 mr-1" /> 10%
             </Button>
-            <Button size="sm" className="text-[11px] h-7 px-2.5" disabled={isSelling}
+            <Button size="sm" className="text-[11px] h-9 min-h-[44px] px-3 md:h-7 md:min-h-0 md:px-2.5" disabled={isSelling}
               onClick={(e) => { e.stopPropagation(); onMarkSold(); }}>
               <CheckCircle2 className="w-3 h-3 mr-1" /> Vendido
             </Button>
