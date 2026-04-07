@@ -1,12 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { differenceInDays, format, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   TrendingUp, TrendingDown, Package, ArrowLeftRight, BarChart3,
-  ChevronRight, ShieldAlert,
+  ChevronRight, ShieldAlert, Clock, AlertTriangle,
   CheckCircle2, Image as ImageIcon, Minus,
 } from "lucide-react";
 import {
@@ -162,6 +163,22 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { labels } = useBusiness();
+  
+
+  const { data: subData } = useQuery({
+    queryKey: ["my-subscription-data"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("status, trial_ends_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 30_000,
+  });
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],
@@ -228,7 +245,60 @@ const Dashboard = () => {
   return (
     <div className="space-y-10 lg:space-y-14 max-w-6xl">
 
-      {/* SECTION 1 — Profit headline */}
+      {/* SUBSCRIPTION BANNER */}
+      {subData?.status === "trial" && subData.trial_ends_at && (() => {
+        const endsAt = new Date(subData.trial_ends_at);
+        const now = new Date();
+        const diffMs = endsAt.getTime() - now.getTime();
+        const diffMins = Math.max(0, Math.ceil(diffMs / 60_000));
+        const diffDays = Math.floor(diffMins / 1440);
+        const diffHours = Math.floor((diffMins % 1440) / 60);
+        const remaining = diffDays > 0
+          ? `${diffDays}d ${diffHours}h`
+          : diffHours > 0
+            ? `${diffHours}h ${diffMins % 60}min`
+            : `${diffMins}min`;
+
+        return (
+          <button
+            onClick={() => navigate("/assinatura")}
+            className="w-full text-left flex items-center gap-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 hover:border-amber-500/40 transition-colors group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 text-amber-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-500">
+                Período de teste — {remaining} restante{diffMins !== 1 ? "s" : ""}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Assine agora para não perder acesso
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-amber-500/40 group-hover:text-amber-500 transition-colors shrink-0" />
+          </button>
+        );
+      })()}
+
+      {subData?.status === "overdue" && (
+        <button
+          onClick={() => navigate("/assinatura")}
+          className="w-full text-left flex items-center gap-4 p-4 rounded-2xl bg-destructive/5 border border-destructive/20 hover:border-destructive/40 transition-colors group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-5 h-5 text-destructive" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-destructive">
+              Pagamento em atraso
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Regularize para evitar bloqueio da conta
+            </p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-destructive/40 group-hover:text-destructive transition-colors shrink-0" />
+        </button>
+      )}
       <section>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
           {format(new Date(), "MMMM yyyy", { locale: ptBR })}
