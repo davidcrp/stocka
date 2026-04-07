@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, useCallback, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,6 +18,7 @@ type AuthContextType = {
   loading: boolean;
   profile: ProfileData | null;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   profile: null,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -36,6 +38,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const initialized = useRef(false);
+  const currentUserId = useRef<string | null>(null);
+
+  const fetchProfile = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name, role, avatar_url, account_id, status, is_superadmin, subscription_status")
+      .eq("user_id", userId)
+      .single();
+    if (data) setProfile(data as ProfileData);
+  }, []);
+
+  // Re-fetch profile on window focus to catch subscription changes server-side
+  useEffect(() => {
+    const handleFocus = () => {
+      if (currentUserId.current) {
+        fetchProfile(currentUserId.current);
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [fetchProfile]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -43,6 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         initialized.current = true;
         setSession(session);
         setUser(session?.user ?? null);
+        currentUserId.current = session?.user?.id ?? null;
         if (session?.user) fetchProfile(session.user.id);
         setLoading(false);
       }
@@ -51,6 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      currentUserId.current = session?.user?.id ?? null;
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
@@ -65,23 +90,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchProfile]);
 
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name, role, avatar_url, account_id, status, is_superadmin, subscription_status")
-      .eq("user_id", userId)
-      .single();
-    if (data) setProfile(data as ProfileData);
-  };
+  const refreshProfile = useCallback(async () => {
+    if (currentUserId.current) {
+      await fetchProfile(currentUserId.current);
+    }
+  }, [fetchProfile]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, profile, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
