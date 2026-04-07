@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Crown, Store, Users, Plus, Save, Search } from "lucide-react";
+import { Crown, Store, Users, Plus, Save, Search, ShieldCheck, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 
 type UserProfile = {
@@ -40,6 +40,7 @@ type UserProfile = {
   status: string;
   account_id: string | null;
   is_superadmin: boolean;
+  subscription_status: string | null;
   created_at: string;
 };
 
@@ -71,7 +72,7 @@ const SuperAdmin = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, role, status, account_id, is_superadmin, created_at")
+        .select("id, user_id, full_name, role, status, account_id, is_superadmin, subscription_status, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as UserProfile[];
@@ -146,6 +147,20 @@ const SuperAdmin = () => {
         delete next[user.user_id];
         return next;
       });
+      queryClient.invalidateQueries({ queryKey: ["superadmin-users"] });
+    }
+  };
+
+  const toggleSubscription = async (user: UserProfile) => {
+    const newStatus = user.subscription_status === "active" ? "inactive" : "active";
+    const { error } = await supabase
+      .from("profiles")
+      .update({ subscription_status: newStatus } as any)
+      .eq("user_id", user.user_id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(`Assinatura de ${user.full_name || "Usuário"} ${newStatus === "active" ? "ativada" : "desativada"}!`);
       queryClient.invalidateQueries({ queryKey: ["superadmin-users"] });
     }
   };
@@ -260,6 +275,7 @@ const SuperAdmin = () => {
                 <TableHead>Loja</TableHead>
                 <TableHead>Cargo</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Assinatura</TableHead>
                 <TableHead className="w-[80px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -324,6 +340,22 @@ const SuperAdmin = () => {
                     </TableCell>
                     <TableCell>
                       <Badge className={`${sts.class} text-xs`}>{sts.label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {!u.is_superadmin && (
+                        <Button
+                          size="sm"
+                          variant={u.subscription_status === "active" ? "destructive" : "default"}
+                          className="h-7 text-xs gap-1"
+                          onClick={() => toggleSubscription(u)}
+                        >
+                          {u.subscription_status === "active" ? (
+                            <><ShieldOff className="w-3 h-3" /> Desativar</>
+                          ) : (
+                            <><ShieldCheck className="w-3 h-3" /> Ativar</>
+                          )}
+                        </Button>
+                      )}
                     </TableCell>
                     <TableCell>
                       {hasChanges && (
