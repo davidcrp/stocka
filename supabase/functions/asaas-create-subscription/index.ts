@@ -18,7 +18,6 @@ Deno.serve(async (req) => {
       throw new Error("ASAAS_API_KEY not configured");
     }
 
-    // Validate auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -33,17 +32,16 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = claimsData.claims.sub;
-    const userEmail = claimsData.claims.email;
+    const userId = user.id;
+    const userEmail = user.email;
 
     const body = await req.json();
     const { name, cpfCnpj, phone } = body;
@@ -56,7 +54,12 @@ Deno.serve(async (req) => {
     }
 
     // Check if user already has a subscription
-    const { data: existingSub } = await supabase
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: existingSub } = await serviceClient
       .from("subscriptions")
       .select("*")
       .eq("user_id", userId)
@@ -75,15 +78,16 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           name,
           email: userEmail,
-          cpfCnpj,
-          phone: phone || undefined,
+          cpfCnpj: cpfCnpj.replace(/\D/g, ""),
+          phone: phone ? phone.replace(/\D/g, "") : undefined,
         }),
       });
 
       const customerData = await customerRes.json();
+      console.log("ASAAS customer response:", JSON.stringify(customerData));
       if (!customerRes.ok) {
-        console.error("ASAAS customer error:", customerData);
-        throw new Error(customerData.errors?.[0]?.description || "Erro ao criar cliente no ASAAS");
+        const errorMsg = customerData.errors?.[0]?.description || "Erro ao criar cliente no ASAAS";
+        throw new Error(errorMsg);
       }
       asaasCustomerId = customerData.id;
     }
@@ -97,7 +101,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         customer: asaasCustomerId,
-        billingType: "UNDEFINED", // Let user choose payment method
+        billingType: "UNDEFINED",
         value: 29.90,
         cycle: "MONTHLY",
         description: "Stocka Pro Plan - Assinatura Mensal",
@@ -106,17 +110,13 @@ Deno.serve(async (req) => {
     });
 
     const subscriptionData = await subscriptionRes.json();
+    console.log("ASAAS subscription response:", JSON.stringify(subscriptionData));
     if (!subscriptionRes.ok) {
-      console.error("ASAAS subscription error:", subscriptionData);
-      throw new Error(subscriptionData.errors?.[0]?.description || "Erro ao criar assinatura no ASAAS");
+      const errorMsg = subscriptionData.errors?.[0]?.description || "Erro ao criar assinatura no ASAAS";
+      throw new Error(errorMsg);
     }
 
     // 3. Save subscription in database
-    const serviceClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     const { data: profile } = await serviceClient
       .from("profiles")
       .select("account_id")

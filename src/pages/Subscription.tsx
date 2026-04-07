@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Crown, Check, Loader2, ShieldCheck, Timer, Zap } from "lucide-react";
+import { Crown, Check, Loader2, Timer, Zap } from "lucide-react";
 import icon from "@/assets/icon.png";
 
 const Subscription = () => {
@@ -19,7 +19,6 @@ const Subscription = () => {
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [phone, setPhone] = useState("");
 
-  // Auto-redirect when trial expires
   useEffect(() => {
     if (trial.isExpired) {
       refreshProfile();
@@ -27,31 +26,33 @@ const Subscription = () => {
   }, [trial.isExpired, refreshProfile]);
 
   const handleSubscribe = async () => {
-    if (!name.trim() || !cpfCnpj.trim()) {
-      toast.error("Preencha o nome e CPF/CNPJ");
+    const cleanCpf = cpfCnpj.replace(/\D/g, "");
+    if (!name.trim()) {
+      toast.error("Preencha o nome completo");
+      return;
+    }
+    if (cleanCpf.length !== 11 && cleanCpf.length !== 14) {
+      toast.error("CPF deve ter 11 dígitos ou CNPJ 14 dígitos");
       return;
     }
 
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Sessão inválida");
+      if (!session) throw new Error("Sessão expirada. Faça login novamente.");
 
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/asaas-create-subscription`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ name, cpfCnpj, phone }),
-        }
-      );
+      const res = await supabase.functions.invoke("asaas-create-subscription", {
+        body: { name: name.trim(), cpfCnpj: cleanCpf, phone: phone.replace(/\D/g, "") },
+      });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erro ao criar assinatura");
+      if (res.error) {
+        throw new Error(res.error.message || "Erro ao criar assinatura");
+      }
+
+      const data = res.data;
+      if (!data?.success) {
+        throw new Error(data?.error || "Erro ao criar assinatura");
+      }
 
       toast.success("Assinatura criada com sucesso!");
 
@@ -59,9 +60,11 @@ const Subscription = () => {
         window.open(data.invoiceUrl, "_blank");
       }
 
-      setTimeout(() => window.location.reload(), 2000);
+      await refreshProfile();
+      setTimeout(() => navigate("/dashboard"), 1500);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao processar assinatura");
+      console.error("Subscription error:", error);
+      toast.error(error.message || "Erro ao processar assinatura. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -91,7 +94,7 @@ const Subscription = () => {
           )}
         </div>
 
-        {/* Trial countdown — big and aggressive */}
+        {/* Trial countdown */}
         {isTrial && (
           <div className={`rounded-2xl border-2 p-6 mb-6 text-center transition-all duration-300 ${
             trial.isUrgent
@@ -138,11 +141,7 @@ const Subscription = () => {
             <p className="text-sm text-muted-foreground mt-1">
               Você tem acesso completo à plataforma
             </p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => navigate("/dashboard")}
-            >
+            <Button variant="outline" className="mt-4" onClick={() => navigate("/dashboard")}>
               Ir para o Dashboard
             </Button>
           </div>
