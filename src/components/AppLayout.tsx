@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import icon from "@/assets/icon.png";
+import TrialBanner from "@/components/TrialBanner";
 
 const links = [
   { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
