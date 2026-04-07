@@ -43,8 +43,8 @@ const HeroSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
           >
-            O CarROI dá à sua concessionária precificação com IA, anúncios automáticos 
-            e controle de lucro por veículo — para vender mais rápido com margem máxima.
+            A Stocka dá ao seu negócio controle total de estoque, precificação inteligente 
+            e gestão de lucro por item — para vender mais rápido com margem máxima.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -93,7 +93,7 @@ const HeroSection = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10 pointer-events-none" />
             <img
               src={dashboardPreview}
-              alt="Dashboard CarROI mostrando análise de lucro e gestão de estoque"
+              alt="Dashboard Stocka mostrando análise de lucro e gestão de estoque"
               width={1920}
               height={1080}
               className="w-full h-auto"

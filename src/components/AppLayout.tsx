@@ -47,8 +47,8 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-[240px] bg-sidebar-background flex flex-col transition-transform lg:translate-x-0 border-r border-border/50 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="h-16 px-5 flex items-center gap-2.5 border-b border-border/30">
-          <img src={icon} alt="CarROI" className="h-7 w-7" />
-          <span className="font-display text-lg font-bold tracking-tight">CarROI</span>
+          <img src={icon} alt="Stocka" className="h-7 w-7" />
+          <span className="font-display text-lg font-bold tracking-tight">Stocka</span>
           <button className="lg:hidden ml-auto p-1" onClick={() => setSidebarOpen(false)}>
             <X className="w-5 h-5 text-muted-foreground" />
           </button>

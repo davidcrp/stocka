@@ -6,11 +6,11 @@ const FooterSection = () => {
       <div className="container">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <img src={icon} alt="CarROI" className="h-6 w-6" />
-            <span className="font-display text-lg font-bold">CarROI</span>
+            <img src={icon} alt="Stocka" className="h-6 w-6" />
+            <span className="font-display text-lg font-bold">Stocka</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Cada carro. Cada real. Cada negócio. — © {new Date().getFullYear()} CarROI
+            Cada item. Cada real. Cada negócio. — © {new Date().getFullYear()} Stocka
           </p>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-colors">Privacy</a>

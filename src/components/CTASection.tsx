@@ -16,7 +16,7 @@ const CTASection = () => {
             Seus concorrentes já estão usando IA para vender mais rápido
           </h2>
           <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-            Cada dia sem o CarROI é dinheiro ficando na mesa. Comece seu teste gratuito e veja a diferença na primeira semana.
+            Cada dia sem a Stocka é dinheiro ficando na mesa. Comece seu teste gratuito e veja a diferença na primeira semana.
           </p>
           <Button size="lg" className="bg-gradient-profit text-primary-foreground font-semibold px-10 py-6 text-base shadow-glow hover:opacity-90">
             Começar teste grátis de 14 dias
