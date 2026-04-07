@@ -94,10 +94,11 @@ const AsaasCheckout = ({ onSuccess, onBack }: AsaasCheckoutProps) => {
 
       if (data.invoiceUrl) {
         setPaymentUrl(data.invoiceUrl);
-        setStep("payment");
-        toast.success("Assinatura criada! Complete o pagamento abaixo.");
+        // Open payment in new tab since ASAAS blocks iframes
+        window.open(data.invoiceUrl, "_blank");
+        setStep("waiting");
+        toast.success("Assinatura criada! Realize o pagamento na aba que foi aberta.");
       } else {
-        // No invoice URL — show waiting state
         setStep("waiting");
         toast.info("Assinatura criada! Aguardando confirmação de pagamento.");
       }
