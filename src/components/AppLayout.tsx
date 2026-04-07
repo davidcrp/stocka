@@ -155,6 +155,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             </Button>
           </div>
         </header>
+        <TrialBanner />
         <main ref={mainRef} className="flex-1 p-4 md:p-6 pb-24 lg:pb-6 overflow-auto">
           {children}
         </main>
