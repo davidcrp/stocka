@@ -53,7 +53,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if user already has a subscription
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -116,7 +115,7 @@ Deno.serve(async (req) => {
       throw new Error(errorMsg);
     }
 
-    // 3. Save subscription in database
+    // 3. Save subscription in database — keep status INACTIVE until payment is confirmed via webhook
     const { data: profile } = await serviceClient
       .from("profiles")
       .select("account_id")
@@ -129,7 +128,7 @@ Deno.serve(async (req) => {
         .update({
           asaas_customer_id: asaasCustomerId,
           asaas_subscription_id: subscriptionData.id,
-          status: "active",
+          status: "inactive",
         })
         .eq("user_id", userId);
     } else {
@@ -138,19 +137,35 @@ Deno.serve(async (req) => {
         account_id: profile?.account_id,
         asaas_customer_id: asaasCustomerId,
         asaas_subscription_id: subscriptionData.id,
-        status: "active",
+        status: "inactive",
         plan: "pro",
       });
     }
 
-    // 4. Update profile subscription status
-    await serviceClient
-      .from("profiles")
-      .update({ subscription_status: "active" })
-      .eq("user_id", userId);
+    // 4. Do NOT update profile to active — webhook will do that after payment confirmation
+    // Keep profile as inactive so user sees "awaiting payment" state
 
-    // Get the payment link from the first invoice
-    const invoiceUrl = subscriptionData.paymentLink || null;
+    // 5. Get the first pending payment to show the payment link
+    let invoiceUrl = subscriptionData.paymentLink || null;
+
+    // Try to get the invoice URL from the first payment
+    if (!invoiceUrl) {
+      try {
+        const paymentsRes = await fetch(
+          `${ASAAS_BASE_URL}/subscriptions/${subscriptionData.id}/payments`,
+          {
+            headers: { access_token: ASAAS_API_KEY },
+          }
+        );
+        const paymentsData = await paymentsRes.json();
+        console.log("ASAAS payments response:", JSON.stringify(paymentsData));
+        if (paymentsData.data && paymentsData.data.length > 0) {
+          invoiceUrl = paymentsData.data[0].invoiceUrl || null;
+        }
+      } catch (e) {
+        console.error("Error fetching payments:", e);
+      }
+    }
 
     return new Response(
       JSON.stringify({
