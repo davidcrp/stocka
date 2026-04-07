@@ -163,6 +163,36 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { labels } = useBusiness();
+  const { profile } = useAuth();
+
+  // Fetch subscription for trial countdown
+  const { data: subscription } = useQuery({
+    queryKey: ["my-subscription"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("status, trial_ends_at")
+        .eq("user_id", profile?.account_id ? "" : "")
+        .maybeSingle();
+      return data;
+    },
+    enabled: false, // disabled, we use the one below
+  });
+
+  const { data: subData } = useQuery({
+    queryKey: ["my-subscription-data"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("status, trial_ends_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 30_000,
+  });
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],
