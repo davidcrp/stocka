@@ -33,6 +33,17 @@ const Subscription = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-lg">
+        {/* Back button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-4 gap-1 text-muted-foreground hover:text-foreground"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar
+        </Button>
+
         {/* Header */}
         <div className="text-center mb-8">
           <img src={icon} alt="Stocka" className="h-10 w-10 mx-auto mb-3" />
