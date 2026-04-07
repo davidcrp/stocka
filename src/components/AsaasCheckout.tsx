@@ -165,12 +165,22 @@ const AsaasCheckout = ({ onSuccess, onBack }: AsaasCheckoutProps) => {
           {checking ? "Verificando..." : "Verificar Pagamento"}
         </Button>
 
+        {paymentUrl && (
+          <Button
+            variant="outline"
+            className="w-full h-11 gap-2"
+            onClick={() => window.open(paymentUrl, "_blank")}
+          >
+            <CreditCard className="w-4 h-4" />
+            Abrir página de pagamento
+          </Button>
+        )}
+
         <Button
-          variant="outline"
+          variant="ghost"
           className="w-full h-11 gap-2"
           onClick={() => setStep("form")}
         >
-          <CreditCard className="w-4 h-4" />
           Gerar novo link de pagamento
         </Button>
 
