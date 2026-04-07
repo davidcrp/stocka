@@ -6,11 +6,22 @@ import { useBusiness } from "@/contexts/BusinessContext";
 import { differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ArrowLeft, Calendar, Package, DollarSign, TrendingUp, Clock, Upload, CheckCircle2, Info,
+  ArrowLeft, Calendar, Package, DollarSign, TrendingUp, Clock, Upload, CheckCircle2, Info, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import SellVehicleDialog from "@/components/SellVehicleDialog";
@@ -23,6 +34,7 @@ const VehicleDetail = () => {
   const { labels, customFields } = useBusiness();
   const [selectedImg, setSelectedImg] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null);
   const [sellOpen, setSellOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -66,6 +78,49 @@ const VehicleDetail = () => {
     setUploading(false);
   };
 
+  const getStoragePathFromPublicUrl = (photoUrl: string) => {
+    try {
+      const marker = "/storage/v1/object/public/vehicle-photos/";
+      const pathname = new URL(photoUrl).pathname;
+      const path = pathname.includes(marker) ? pathname.split(marker)[1] : "";
+      return path ? decodeURIComponent(path) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    const photoUrl = photos[selectedImg];
+
+    if (!id || !photoUrl) return;
+
+    setDeletingPhoto(photoUrl);
+
+    const nextPhotos = photos.filter((_, index) => index !== selectedImg);
+    const { error: updateError } = await supabase.from("vehicles").update({ photos: nextPhotos }).eq("id", id);
+
+    if (updateError) {
+      toast({ title: "Erro ao excluir foto", description: updateError.message, variant: "destructive" });
+      setDeletingPhoto(null);
+      return;
+    }
+
+    const storagePath = getStoragePathFromPublicUrl(photoUrl);
+    if (storagePath) {
+      const { error: storageError } = await supabase.storage.from("vehicle-photos").remove([storagePath]);
+      if (storageError) {
+        console.warn("Não foi possível remover o arquivo do armazenamento:", storageError.message);
+      }
+    }
+
+    setSelectedImg((current) => (nextPhotos.length === 0 ? 0 : Math.min(current, nextPhotos.length - 1)));
+    toast({ title: "Foto excluída com sucesso" });
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    queryClient.invalidateQueries({ queryKey: ["vehicle-detail", id] });
+    refetch();
+    setDeletingPhoto(null);
+  };
+
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   if (isLoading || !vehicle) {
@@ -103,9 +158,41 @@ const VehicleDetail = () => {
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Image Gallery */}
         <div className="space-y-3">
-          <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-muted border border-border">
+          <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-muted border border-border relative">
             {photos.length > 0 ? (
-              <img src={photos[selectedImg] || photos[0]} alt={`${vehicle.brand} ${vehicle.model}`} className="w-full h-full object-cover" />
+              <>
+                <img src={photos[selectedImg] || photos[0]} alt={`${vehicle.brand} ${vehicle.model}`} className="w-full h-full object-cover" />
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="absolute right-3 top-3 h-10 w-10 rounded-full border border-border/60 bg-background/85 p-0 backdrop-blur-sm"
+                      disabled={deletingPhoto === photos[selectedImg]}
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-card border-border">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir foto?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        A foto selecionada será removida deste item.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeletePhoto}
+                        className="bg-destructive text-destructive-foreground"
+                      >
+                        {deletingPhoto === photos[selectedImg] ? "Excluindo..." : "Excluir foto"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
                 <Package className="w-16 h-16 mb-3 opacity-30" />
