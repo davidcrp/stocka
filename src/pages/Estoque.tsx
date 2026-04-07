@@ -437,7 +437,7 @@ const Estoque = () => {
       </div>
 
       {/* Item Cards */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sorted.map((v) => {
           const firstPhoto = v.photos && v.photos.length > 0 ? v.photos[0] : null;
           const SuggIcon = v.suggestionIcon === "up" ? ArrowUp : v.suggestionIcon === "down" ? ArrowDown : v.suggestionIcon === "promo" ? Megaphone : null;
@@ -520,36 +520,36 @@ const Estoque = () => {
 
                 <div className="mt-3 pt-3 border-t border-border/30 flex items-center gap-2">
                   {v.status === "em_estoque" && (
-                    <Button size="sm" className="flex-1 text-xs h-8 bg-primary text-primary-foreground"
+                    <Button size="sm" className="flex-1 text-xs h-11 min-h-[44px] bg-primary text-primary-foreground"
                       onClick={(e) => handleOpenSell(v, e)}>
-                      <Tag className="w-3 h-3 mr-1" /> {labels.sellItem}
+                      <Tag className="w-3.5 h-3.5 mr-1" /> {labels.sellItem}
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" className="flex-1 text-xs h-8" onClick={() => openEdit(v)}>
-                    <Pencil className="w-3 h-3 mr-1" /> Editar
+                  <Button size="sm" variant="outline" className="flex-1 text-xs h-11 min-h-[44px]" onClick={() => openEdit(v)}>
+                    <Pencil className="w-3.5 h-3.5 mr-1" /> Editar
                   </Button>
                   <label>
-                    <Button size="sm" variant="outline" className="text-xs h-8" type="button" disabled={uploadingPhotos}
+                    <Button size="sm" variant="outline" className="text-xs h-11 min-h-[44px] w-11" type="button" disabled={uploadingPhotos}
                       onClick={() => document.getElementById(`photo-${v.id}`)?.click()}>
-                      <Upload className="w-3 h-3" />
+                      <Upload className="w-3.5 h-3.5" />
                     </Button>
                     <input id={`photo-${v.id}`} type="file" accept="image/*" multiple className="hidden"
                       onChange={(e) => e.target.files && handlePhotoUpload(v.id, e.target.files)} />
                   </label>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
-                        <Trash2 className="w-3.5 h-3.5" />
+                      <Button size="sm" variant="ghost" className="h-11 min-h-[44px] w-11 p-0 text-destructive hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-card border-border">
+                    <AlertDialogContent className="bg-card border-border max-w-[90vw] sm:max-w-lg">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Excluir {labels.itemSingular.toLowerCase()}?</AlertDialogTitle>
                         <AlertDialogDescription>{labels.deleteConfirm.replace("O veículo", `${v.brand} ${v.model}`)}</AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(v.id)} className="bg-destructive text-destructive-foreground">Excluir</AlertDialogAction>
+                        <AlertDialogCancel className="h-11 min-h-[44px]">Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(v.id)} className="bg-destructive text-destructive-foreground h-11 min-h-[44px]">Excluir</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
