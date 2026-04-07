@@ -163,7 +163,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { labels } = useBusiness();
-  const _profile = useAuth();
+  
 
   const { data: subData } = useQuery({
     queryKey: ["my-subscription-data"],
