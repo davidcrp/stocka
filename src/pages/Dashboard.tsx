@@ -233,41 +233,35 @@ const Dashboard = () => {
     <div className="space-y-10 lg:space-y-14 max-w-6xl">
 
       {/* SUBSCRIPTION BANNER */}
-      {subData?.status === "trial" && subData.trial_ends_at && (() => {
-        const endsAt = new Date(subData.trial_ends_at);
-        const now = new Date();
-        const diffMs = endsAt.getTime() - now.getTime();
-        const diffMins = Math.max(0, Math.ceil(diffMs / 60_000));
-        const diffDays = Math.floor(diffMins / 1440);
-        const diffHours = Math.floor((diffMins % 1440) / 60);
-        const remaining = diffDays > 0
-          ? `${diffDays}d ${diffHours}h`
-          : diffHours > 0
-            ? `${diffHours}h ${diffMins % 60}min`
-            : `${diffMins}min`;
+      {trial.status === "trial" && !trial.isExpired && (
+        <button
+          onClick={() => navigate("/assinatura")}
+          className={`w-full text-left flex items-center gap-4 p-4 rounded-2xl transition-colors group ${
+            trial.isUrgent
+              ? "bg-destructive/5 border border-destructive/20 hover:border-destructive/40"
+              : "bg-amber-500/5 border border-amber-500/20 hover:border-amber-500/40"
+          }`}
+        >
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+            trial.isUrgent ? "bg-destructive/10" : "bg-amber-500/10"
+          }`}>
+            <Clock className={`w-5 h-5 ${trial.isUrgent ? "text-destructive" : "text-amber-500"}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-semibold ${trial.isUrgent ? "text-destructive" : "text-amber-500"}`}>
+              Teste gratuito — {trial.formatted} restantes
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Assine agora para não perder acesso
+            </p>
+          </div>
+          <ChevronRight className={`w-4 h-4 shrink-0 transition-colors ${
+            trial.isUrgent ? "text-destructive/40 group-hover:text-destructive" : "text-amber-500/40 group-hover:text-amber-500"
+          }`} />
+        </button>
+      )}
 
-        return (
-          <button
-            onClick={() => navigate("/assinatura")}
-            className="w-full text-left flex items-center gap-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 hover:border-amber-500/40 transition-colors group"
-          >
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
-              <Clock className="w-5 h-5 text-amber-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-amber-500">
-                Período de teste — {remaining} restante{diffMins !== 1 ? "s" : ""}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Assine agora para não perder acesso
-              </p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-amber-500/40 group-hover:text-amber-500 transition-colors shrink-0" />
-          </button>
-        );
-      })()}
-
-      {subData?.status === "overdue" && (
+      {trial.status === "overdue" && (
         <button
           onClick={() => navigate("/assinatura")}
           className="w-full text-left flex items-center gap-4 p-4 rounded-2xl bg-destructive/5 border border-destructive/20 hover:border-destructive/40 transition-colors group"
@@ -276,12 +270,8 @@ const Dashboard = () => {
             <AlertTriangle className="w-5 h-5 text-destructive" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-destructive">
-              Pagamento em atraso
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Regularize para evitar bloqueio da conta
-            </p>
+            <p className="text-sm font-semibold text-destructive">Pagamento em atraso</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Regularize para evitar bloqueio da conta</p>
           </div>
           <ChevronRight className="w-4 h-4 text-destructive/40 group-hover:text-destructive transition-colors shrink-0" />
         </button>
