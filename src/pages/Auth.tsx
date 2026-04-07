@@ -108,8 +108,8 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <img src={icon} alt="CarROI" className="h-9 w-9" />
-          <span className="font-display text-2xl font-bold">CarROI</span>
+          <img src={icon} alt="Stocka" className="h-9 w-9" />
+          <span className="font-display text-2xl font-bold">Stocka</span>
         </div>
 
         <div className="p-6 rounded-xl border border-border bg-card">

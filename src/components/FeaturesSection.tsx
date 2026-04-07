@@ -77,7 +77,7 @@ const FeaturesSection = () => {
             Every feature <span className="text-gradient-profit">makes you money</span>
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Sem enrolação. Sem métricas de vaidade. Cada ferramenta do CarROI existe porque impacta diretamente seu lucro.
+            Sem enrolação. Sem métricas de vaidade. Cada ferramenta da Stocka existe porque impacta diretamente seu lucro.
           </p>
         </motion.div>
 
