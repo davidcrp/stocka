@@ -87,13 +87,14 @@ const VehicleDetail = () => {
   const cf = (vehicle as any).custom_fields || {};
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/estoque")} className="text-muted-foreground">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao {labels.stockPage}
+    <div className="space-y-6 max-w-5xl pb-8">
+      {/* Top bar */}
+      <div className="flex items-center justify-between gap-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/estoque")} className="text-muted-foreground h-11 min-h-[44px]">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
         </Button>
         {vehicle.status === "em_estoque" && (
-          <Button size="sm" className="bg-primary text-primary-foreground gap-1.5" onClick={() => setSellOpen(true)}>
+          <Button className="bg-primary text-primary-foreground gap-1.5 h-11 min-h-[44px] px-5" onClick={() => setSellOpen(true)}>
             <CheckCircle2 className="w-4 h-4" /> Marcar como Vendido
           </Button>
         )}
@@ -113,17 +114,17 @@ const VehicleDetail = () => {
             )}
           </div>
           {photos.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex gap-2 overflow-x-auto pb-1 snap-x -mx-1 px-1">
               {photos.map((p: string, i: number) => (
                 <button key={i} onClick={() => setSelectedImg(i)}
-                  className={`w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${selectedImg === i ? "border-primary shadow-glow-sm" : "border-border opacity-60 hover:opacity-100"}`}>
-                  <img src={p} alt="" className="w-full h-full object-cover" />
+                  className={`w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all snap-start active:scale-95 ${selectedImg === i ? "border-primary shadow-glow-sm" : "border-border opacity-60 hover:opacity-100"}`}>
+                  <img src={p} alt="" className="w-full h-full object-cover" loading="lazy" />
                 </button>
               ))}
             </div>
           )}
           <label>
-            <Button variant="outline" className="w-full" disabled={uploading}
+            <Button variant="outline" className="w-full h-11 min-h-[44px]" disabled={uploading}
               onClick={() => document.getElementById("detail-photo-upload")?.click()}>
               <Upload className="w-4 h-4 mr-2" /> {uploading ? "Enviando..." : "Adicionar Fotos"}
             </Button>
