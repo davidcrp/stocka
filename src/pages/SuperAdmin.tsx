@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Crown, Store, Users, Plus, Save, Search } from "lucide-react";
+import { Crown, Store, Users, Plus, Save, Search, ShieldCheck, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 
 type UserProfile = {
@@ -40,6 +40,7 @@ type UserProfile = {
   status: string;
   account_id: string | null;
   is_superadmin: boolean;
+  subscription_status: string | null;
   created_at: string;
 };
 
@@ -71,7 +72,7 @@ const SuperAdmin = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, role, status, account_id, is_superadmin, created_at")
+        .select("id, user_id, full_name, role, status, account_id, is_superadmin, subscription_status, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as UserProfile[];
