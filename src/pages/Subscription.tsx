@@ -9,7 +9,7 @@ import { Crown, Check, Loader2, ShieldCheck } from "lucide-react";
 import icon from "@/assets/icon.png";
 
 const Subscription = () => {
-  const { user, profile, signOut } = useAuth();
+  const { profile, signOut } = useAuth();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState(profile?.full_name || "");
   const [cpfCnpj, setCpfCnpj] = useState("");

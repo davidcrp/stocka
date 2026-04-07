@@ -16,6 +16,7 @@ import NotFound from "@/pages/NotFound";
 import Settings from "@/pages/Settings";
 import AdminUsers from "@/pages/AdminUsers";
 import SuperAdmin from "@/pages/SuperAdmin";
+import Subscription from "@/pages/Subscription";
 
 const queryClient = new QueryClient();
 
@@ -45,15 +46,40 @@ const ProtectedLayout = () => {
   if (!user) return <Navigate to="/auth" replace />;
   if (profile?.status === "pending") return <PendingScreen />;
   if (profile?.status === "rejected") return <Navigate to="/auth" replace />;
+
+  // Subscription check — superadmins bypass
+  const subStatus = profile?.subscription_status;
+  if (!profile?.is_superadmin && subStatus !== "active" && subStatus !== "trial") {
+    return <Navigate to="/assinatura" replace />;
+  }
+
   return <AppLayout><Outlet /></AppLayout>;
 };
 
 const AuthRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, profile } = useAuth();
   if (loading) return null;
-  if (user && profile?.status === "approved") return <Navigate to="/dashboard" replace />;
+  if (user && profile?.status === "approved") {
+    const subStatus = profile?.subscription_status;
+    if (!profile?.is_superadmin && subStatus !== "active" && subStatus !== "trial") {
+      return <Navigate to="/assinatura" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
   if (user && profile?.status === "pending") return <PendingScreen />;
   return <>{children}</>;
+};
+
+const SubscriptionRoute = () => {
+  const { user, loading, profile } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/auth" replace />;
+  // If already subscribed, go to dashboard
+  const subStatus = profile?.subscription_status;
+  if (profile?.is_superadmin || subStatus === "active" || subStatus === "trial") {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <Subscription />;
 };
 
 const App = () => (
@@ -68,6 +94,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+              <Route path="/assinatura" element={<SubscriptionRoute />} />
               <Route element={<ProtectedLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/estoque" element={<Estoque />} />
