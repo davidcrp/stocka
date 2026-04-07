@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 import { Button } from "@/components/ui/button";
-import { Crown, Check, Timer } from "lucide-react";
+import { Crown, Check, Timer, ArrowLeft } from "lucide-react";
 import AsaasCheckout from "@/components/AsaasCheckout";
 import icon from "@/assets/icon.png";
 
