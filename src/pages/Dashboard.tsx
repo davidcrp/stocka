@@ -620,6 +620,15 @@ const ItemRow = ({ item: v, onNavigate, onMarkSold, onReducePrice, isSelling, is
           <p className="text-[11px] text-muted-foreground mt-0.5">{v.suggestion}</p>
         </div>
 
+        <div>
+          <p className="text-[10px] text-muted-foreground">Custo</p>
+          <p className="text-sm font-medium">{fmt(v.total_cost)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-muted-foreground">Preço de venda</p>
+          <p className="text-sm font-medium">{fmt(v.listing_price)}</p>
+        </div>
+
         <div className="flex items-center gap-4 mt-2 flex-wrap">
           <div>
             <p className="text-[10px] text-muted-foreground">Lucro</p>
