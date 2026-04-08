@@ -163,6 +163,15 @@ const fetchDashboardStats = async (): Promise<Stats> => {
     redCount: agingItems.filter((v) => v.status === "red").length,
     tradesCount, tradesProfit, avgMargin, profitPerItem, avgTicket, capitalAtRisk, highDemandCount,
   };
+};
+
+const fmt = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+const fmtK = (v: number) => {
+  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
+  return fmt(v);
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
