@@ -108,7 +108,6 @@ Deno.serve(async (req) => {
     const { error: deleteTradesError } = await serviceClient
       .from("trades")
       .delete()
-      .eq("account_id", profile.account_id)
       .or(`vehicle_sold_id.eq.${vehicleId},vehicle_received_id.eq.${vehicleId}`);
 
     if (deleteTradesError) {
@@ -118,7 +117,6 @@ Deno.serve(async (req) => {
     const { error: deleteSalesError } = await serviceClient
       .from("sales")
       .delete()
-      .eq("account_id", profile.account_id)
       .eq("vehicle_id", vehicleId);
 
     if (deleteSalesError) {

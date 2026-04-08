@@ -77,8 +77,11 @@ const Estoque = () => {
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    queryClient.invalidateQueries({ queryKey: ["vehicle-detail"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     queryClient.invalidateQueries({ queryKey: ["vendas-data"] });
+    queryClient.invalidateQueries({ queryKey: ["trocas-data"] });
+    queryClient.invalidateQueries({ queryKey: ["leads"] });
   };
 
   const totalCost = form.purchase_price + form.reconditioning_cost + form.transport_cost;
