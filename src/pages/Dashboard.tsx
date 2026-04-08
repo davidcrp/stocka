@@ -475,24 +475,34 @@ const Dashboard = () => {
       {/* SECTION 8 — Financial breakdown */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         <div>
-          <h2 className="font-display text-lg font-bold mb-4">Resumo financeiro</h2>
+          <h2 className="font-display text-lg font-bold mb-1">Resumo financeiro</h2>
+          <p className="text-xs text-muted-foreground mb-4">Valores totais acumulados</p>
           <div className="space-y-0">
-            <FinRow label="Capital investido" value={fmtK(stats.totalInvested)} />
-            <FinRow label="Valor do estoque" value={fmtK(stats.totalInventoryValue)} positive={stats.totalInventoryValue > stats.totalInvested} />
-            <FinRow label="Lucro potencial" value={fmtK(stats.totalProfitPotential)} positive={stats.totalProfitPotential > 0} bold />
-            <FinRow label="Lucro realizado" value={fmtK(stats.totalProfit)} positive={stats.totalProfit > 0} bold />
-            <FinRow label={`Lucro por ${labels.itemSingular.toLowerCase()}`} value={fmtK(stats.profitPerItem)} positive={stats.profitPerItem > 0} />
-            {stats.capitalAtRisk > 0 && <FinRow label="Capital em risco" value={fmtK(stats.capitalAtRisk)} negative />}
+            <FinRow label="Faturamento total" value={fmtK(stats.totalRevenue)} bold />
+            <FinRow label="Custo dos vendidos" value={`- ${fmtK(stats.totalCostSold)}`} />
+            <FinRow label="Comissões pagas" value={`- ${fmtK(stats.totalCommissions)}`} />
+            <FinRow label="Lucro líquido realizado" value={fmtK(stats.totalProfit)} positive={stats.totalProfit > 0} bold />
+            <FinRow label="Ticket médio" value={fmtK(stats.avgTicket)} />
+            <FinRow label={`Lucro médio / ${labels.itemSingular.toLowerCase()}`} value={fmtK(stats.profitPerItem)} positive={stats.profitPerItem > 0} />
+            <FinRow label="Margem média" value={`${stats.avgMargin.toFixed(0)}%`} positive={stats.avgMargin >= 15} />
           </div>
         </div>
         <div>
-          <h2 className="font-display text-lg font-bold mb-4">Trocas e operações</h2>
+          <h2 className="font-display text-lg font-bold mb-1">Estoque e operações</h2>
+          <p className="text-xs text-muted-foreground mb-4">Posição atual do negócio</p>
           <div className="space-y-0">
+            <FinRow label="Capital investido (estoque)" value={fmtK(stats.totalInvested)} />
+            <FinRow label="Valor de venda do estoque" value={fmtK(stats.totalInventoryValue)} />
+            <FinRow label="Lucro potencial (estoque)" value={fmtK(stats.totalProfitPotential)} positive={stats.totalProfitPotential > 0} bold />
             <FinRow label="Total de vendas" value={`${stats.totalSales}`} />
             <FinRow label="Vendas este mês" value={`${stats.thisMonthSales}`} />
+            <FinRow label="Faturamento mês anterior" value={fmtK(stats.prevMonthRevenue)} />
             <FinRow label="Trocas realizadas" value={`${stats.tradesCount}`} />
             <FinRow label="Lucro em trocas" value={fmtK(stats.tradesProfit)} positive={stats.tradesProfit > 0} />
-            <FinRow label="Margem média" value={`${stats.avgMargin.toFixed(0)}%`} positive={stats.avgMargin >= 15} />
+            {stats.capitalAtRisk > 0 && <FinRow label="Capital em risco (+30d)" value={fmtK(stats.capitalAtRisk)} negative />}
+          </div>
+        </div>
+      </section>
           </div>
         </div>
       </section>
