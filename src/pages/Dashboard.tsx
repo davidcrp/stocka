@@ -290,34 +290,46 @@ const Dashboard = () => {
         </button>
       )}
 
-      {/* HERO SECTION — Profit */}
+      {/* HERO SECTION — Revenue & Profit */}
       <section>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
           {format(new Date(), "MMMM yyyy", { locale: ptBR })}
         </p>
         <div className="flex flex-col gap-4">
-          <div>
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-none">
-              {fmt(stats.thisMonthProfit)}
-            </h1>
-            <div className="flex items-center gap-2.5 mt-3">
-              <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
-                profitPositive
-                  ? "bg-primary/10 text-primary"
-                  : "bg-destructive/10 text-destructive"
-              }`}>
-                {profitPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                {profitChangeNum >= 0 ? "+" : ""}{profitChangeNum.toFixed(0)}%
-              </span>
-              <span className="text-xs text-muted-foreground">lucro vs mês anterior</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Faturamento do mês */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Faturamento do mês</p>
+              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none">
+                {fmt(stats.thisMonthRevenue)}
+              </h1>
+              <p className="text-xs text-muted-foreground mt-1">{stats.thisMonthSales} venda{stats.thisMonthSales !== 1 ? "s" : ""} este mês</p>
+            </div>
+            {/* Lucro do mês */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Lucro do mês</p>
+              <h2 className={`font-display text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none ${stats.thisMonthProfit >= 0 ? "text-primary" : "text-destructive"}`}>
+                {stats.thisMonthProfit >= 0 ? "+" : ""}{fmt(stats.thisMonthProfit)}
+              </h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
+                  profitPositive
+                    ? "bg-primary/10 text-primary"
+                    : "bg-destructive/10 text-destructive"
+                }`}>
+                  {profitPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {profitChangeNum >= 0 ? "+" : ""}{profitChangeNum.toFixed(0)}%
+                </span>
+                <span className="text-[11px] text-muted-foreground">vs mês anterior</span>
+              </div>
             </div>
           </div>
-          {/* Quick actions — larger on mobile */}
+          {/* Quick actions */}
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
             <Button variant="outline" onClick={() => navigate("/estoque")} className="text-xs h-11 min-h-[44px] px-4 shrink-0">
               <Package className="w-4 h-4 mr-1.5" /> Ver {labels.stockPage}
             </Button>
-            <Button variant="outline" onClick={() => navigate("/estoque")} className="text-xs h-11 min-h-[44px] px-4 shrink-0">
+            <Button variant="outline" onClick={() => navigate("/vendas")} className="text-xs h-11 min-h-[44px] px-4 shrink-0">
               <CheckCircle2 className="w-4 h-4 mr-1.5" /> Nova Venda
             </Button>
             <Button onClick={() => navigate("/trocas")} className="text-xs h-11 min-h-[44px] px-4 shrink-0">
@@ -349,9 +361,9 @@ const Dashboard = () => {
       {/* SECTION 3 — Key metrics */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-x-6">
         <MetricBlock label="Em estoque" value={String(stats.inStock)} sub={`${fmtK(stats.totalInvested)} investido`} />
-        <MetricBlock label="Lucro potencial" value={fmtK(stats.totalProfitPotential)} sub={`Margem média ${stats.avgMargin.toFixed(0)}%`} highlight={stats.totalProfitPotential > 0} />
+        <MetricBlock label="Valor do estoque" value={fmtK(stats.totalInventoryValue)} sub={`Lucro potencial: ${fmtK(stats.totalProfitPotential)}`} highlight={stats.totalProfitPotential > 0} />
+        <MetricBlock label="Ticket médio" value={fmtK(stats.avgTicket)} sub={`${stats.totalSales} vendas total`} />
         <MetricBlock label="Dias p/ vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "—"} sub={stats.avgDaysToSell > 30 ? "Acima do ideal" : "Saudável"} warn={stats.avgDaysToSell > 30} />
-        <MetricBlock label={`Lucro / ${labels.itemSingular.toLowerCase()}`} value={fmtK(stats.profitPerItem)} sub={`${stats.totalSales} vendas total`} highlight={stats.profitPerItem > 0} />
       </section>
 
       <div className="border-t border-border/40" />
