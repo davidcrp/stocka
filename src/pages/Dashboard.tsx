@@ -31,13 +31,14 @@ type ItemAging = {
 type Stats = {
   inStock: number; totalInvested: number; totalInventoryValue: number;
   totalProfitPotential: number; avgDaysToSell: number; totalSales: number;
-  totalProfit: number; thisMonthProfit: number; thisMonthSales: number;
-  prevMonthProfit: number; prevMonthSales: number;
+  totalRevenue: number; totalCostSold: number; totalCommissions: number;
+  totalProfit: number; thisMonthRevenue: number; thisMonthProfit: number; thisMonthSales: number;
+  prevMonthRevenue: number; prevMonthProfit: number; prevMonthSales: number;
   chartData: { month: string; revenue: number; profit: number }[];
   items: ItemAging[];
   greenCount: number; yellowCount: number; redCount: number;
   tradesCount: number; tradesProfit: number;
-  avgMargin: number; profitPerItem: number;
+  avgMargin: number; profitPerItem: number; avgTicket: number;
   capitalAtRisk: number; highDemandCount: number;
 };
 
@@ -73,7 +74,14 @@ const fetchDashboardStats = async (): Promise<Stats> => {
   const totalInvested = inStock.reduce((s, v) => s + calcTotalCost(v), 0);
   const totalInventoryValue = inStock.reduce((s, v) => s + (v.listing_price || 0), 0);
   const totalProfitPotential = totalInventoryValue - totalInvested;
-  const totalProfit = sales.reduce((s, sale) => s + calcProfit(sale), 0);
+
+  const totalRevenue = sales.reduce((s, sale) => s + (sale.final_price || 0), 0);
+  const totalCostSold = sales.reduce((s, sale) => {
+    const v = sale.vehicles as any;
+    return s + (v?.purchase_price || 0) + (v?.reconditioning_cost || 0) + (v?.transport_cost || 0) + (expensesByVehicle[sale.vehicle_id] || 0);
+  }, 0);
+  const totalCommissions = sales.reduce((s, sale) => s + (sale.commission || 0), 0);
+  const totalProfit = totalRevenue - totalCostSold - totalCommissions;
 
   const now = new Date();
   const thisMonthStart = startOfMonth(now);
@@ -85,7 +93,9 @@ const fetchDashboardStats = async (): Promise<Stats> => {
     return d >= prevMonthStart && d < thisMonthStart;
   });
 
+  const thisMonthRevenue = thisMonthSalesArr.reduce((s, sale) => s + (sale.final_price || 0), 0);
   const thisMonthProfit = thisMonthSalesArr.reduce((s, sale) => s + calcProfit(sale), 0);
+  const prevMonthRevenue = prevMonthSalesArr.reduce((s, sale) => s + (sale.final_price || 0), 0);
   const prevMonthProfit = prevMonthSalesArr.reduce((s, sale) => s + calcProfit(sale), 0);
 
   const chartData: { month: string; revenue: number; profit: number }[] = [];
@@ -139,16 +149,19 @@ const fetchDashboardStats = async (): Promise<Stats> => {
   const capitalAtRisk = agingItems.filter((v) => v.status === "red").reduce((s, v) => s + v.total_cost, 0);
   const highDemandCount = agingItems.filter((v) => v.status === "green" && v.margin >= 20).length;
 
+  const avgTicket = sales.length > 0 ? totalRevenue / sales.length : 0;
+
   return {
     inStock: inStock.length, totalInvested, totalInventoryValue, totalProfitPotential,
-    avgDaysToSell: Math.round(avgDays), totalSales: sales.length, totalProfit,
-    thisMonthProfit, thisMonthSales: thisMonthSalesArr.length,
-    prevMonthProfit, prevMonthSales: prevMonthSalesArr.length,
+    avgDaysToSell: Math.round(avgDays), totalSales: sales.length,
+    totalRevenue, totalCostSold, totalCommissions, totalProfit,
+    thisMonthRevenue, thisMonthProfit, thisMonthSales: thisMonthSalesArr.length,
+    prevMonthRevenue, prevMonthProfit, prevMonthSales: prevMonthSalesArr.length,
     chartData, items: agingItems,
     greenCount: agingItems.filter((v) => v.status === "green").length,
     yellowCount: agingItems.filter((v) => v.status === "yellow").length,
     redCount: agingItems.filter((v) => v.status === "red").length,
-    tradesCount, tradesProfit, avgMargin, profitPerItem, capitalAtRisk, highDemandCount,
+    tradesCount, tradesProfit, avgMargin, profitPerItem, avgTicket, capitalAtRisk, highDemandCount,
   };
 };
 
@@ -277,34 +290,46 @@ const Dashboard = () => {
         </button>
       )}
 
-      {/* HERO SECTION — Profit */}
+      {/* HERO SECTION — Revenue & Profit */}
       <section>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
           {format(new Date(), "MMMM yyyy", { locale: ptBR })}
         </p>
         <div className="flex flex-col gap-4">
-          <div>
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-none">
-              {fmt(stats.thisMonthProfit)}
-            </h1>
-            <div className="flex items-center gap-2.5 mt-3">
-              <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
-                profitPositive
-                  ? "bg-primary/10 text-primary"
-                  : "bg-destructive/10 text-destructive"
-              }`}>
-                {profitPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                {profitChangeNum >= 0 ? "+" : ""}{profitChangeNum.toFixed(0)}%
-              </span>
-              <span className="text-xs text-muted-foreground">lucro vs mês anterior</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Faturamento do mês */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Faturamento do mês</p>
+              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none">
+                {fmt(stats.thisMonthRevenue)}
+              </h1>
+              <p className="text-xs text-muted-foreground mt-1">{stats.thisMonthSales} venda{stats.thisMonthSales !== 1 ? "s" : ""} este mês</p>
+            </div>
+            {/* Lucro do mês */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Lucro do mês</p>
+              <h2 className={`font-display text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none ${stats.thisMonthProfit >= 0 ? "text-primary" : "text-destructive"}`}>
+                {stats.thisMonthProfit >= 0 ? "+" : ""}{fmt(stats.thisMonthProfit)}
+              </h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
+                  profitPositive
+                    ? "bg-primary/10 text-primary"
+                    : "bg-destructive/10 text-destructive"
+                }`}>
+                  {profitPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {profitChangeNum >= 0 ? "+" : ""}{profitChangeNum.toFixed(0)}%
+                </span>
+                <span className="text-[11px] text-muted-foreground">vs mês anterior</span>
+              </div>
             </div>
           </div>
-          {/* Quick actions — larger on mobile */}
+          {/* Quick actions */}
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
             <Button variant="outline" onClick={() => navigate("/estoque")} className="text-xs h-11 min-h-[44px] px-4 shrink-0">
               <Package className="w-4 h-4 mr-1.5" /> Ver {labels.stockPage}
             </Button>
-            <Button variant="outline" onClick={() => navigate("/estoque")} className="text-xs h-11 min-h-[44px] px-4 shrink-0">
+            <Button variant="outline" onClick={() => navigate("/vendas")} className="text-xs h-11 min-h-[44px] px-4 shrink-0">
               <CheckCircle2 className="w-4 h-4 mr-1.5" /> Nova Venda
             </Button>
             <Button onClick={() => navigate("/trocas")} className="text-xs h-11 min-h-[44px] px-4 shrink-0">
@@ -336,9 +361,9 @@ const Dashboard = () => {
       {/* SECTION 3 — Key metrics */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-x-6">
         <MetricBlock label="Em estoque" value={String(stats.inStock)} sub={`${fmtK(stats.totalInvested)} investido`} />
-        <MetricBlock label="Lucro potencial" value={fmtK(stats.totalProfitPotential)} sub={`Margem média ${stats.avgMargin.toFixed(0)}%`} highlight={stats.totalProfitPotential > 0} />
+        <MetricBlock label="Valor do estoque" value={fmtK(stats.totalInventoryValue)} sub={`Lucro potencial: ${fmtK(stats.totalProfitPotential)}`} highlight={stats.totalProfitPotential > 0} />
+        <MetricBlock label="Ticket médio" value={fmtK(stats.avgTicket)} sub={`${stats.totalSales} vendas total`} />
         <MetricBlock label="Dias p/ vender" value={stats.avgDaysToSell > 0 ? `${stats.avgDaysToSell}` : "—"} sub={stats.avgDaysToSell > 30 ? "Acima do ideal" : "Saudável"} warn={stats.avgDaysToSell > 30} />
-        <MetricBlock label={`Lucro / ${labels.itemSingular.toLowerCase()}`} value={fmtK(stats.profitPerItem)} sub={`${stats.totalSales} vendas total`} highlight={stats.profitPerItem > 0} />
       </section>
 
       <div className="border-t border-border/40" />
@@ -417,7 +442,17 @@ const Dashboard = () => {
                 )}
                 <div className="p-4">
                   <p className="text-sm font-semibold">{v.brand} {v.model} <span className="text-muted-foreground font-normal">{v.year_fab}</span></p>
-                  <div className="flex items-baseline justify-between mt-2">
+                  <div className="grid grid-cols-2 gap-1 mt-2">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Custo</p>
+                      <p className="text-xs font-medium tabular-nums">{fmt(v.total_cost)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Venda</p>
+                      <p className="text-xs font-medium tabular-nums">{fmt(v.listing_price)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-baseline justify-between mt-2 pt-2 border-t border-border/20">
                     <p className="font-display text-lg font-black text-primary">+{fmt(v.profit)}</p>
                     <p className="text-[11px] text-muted-foreground">{v.days}d · {v.margin.toFixed(0)}%</p>
                   </div>
@@ -450,24 +485,31 @@ const Dashboard = () => {
       {/* SECTION 8 — Financial breakdown */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         <div>
-          <h2 className="font-display text-lg font-bold mb-4">Resumo financeiro</h2>
+          <h2 className="font-display text-lg font-bold mb-1">Resumo financeiro</h2>
+          <p className="text-xs text-muted-foreground mb-4">Valores totais acumulados</p>
           <div className="space-y-0">
-            <FinRow label="Capital investido" value={fmtK(stats.totalInvested)} />
-            <FinRow label="Valor do estoque" value={fmtK(stats.totalInventoryValue)} positive={stats.totalInventoryValue > stats.totalInvested} />
-            <FinRow label="Lucro potencial" value={fmtK(stats.totalProfitPotential)} positive={stats.totalProfitPotential > 0} bold />
-            <FinRow label="Lucro realizado" value={fmtK(stats.totalProfit)} positive={stats.totalProfit > 0} bold />
-            <FinRow label={`Lucro por ${labels.itemSingular.toLowerCase()}`} value={fmtK(stats.profitPerItem)} positive={stats.profitPerItem > 0} />
-            {stats.capitalAtRisk > 0 && <FinRow label="Capital em risco" value={fmtK(stats.capitalAtRisk)} negative />}
+            <FinRow label="Faturamento total" value={fmtK(stats.totalRevenue)} bold />
+            <FinRow label="Custo dos vendidos" value={`- ${fmtK(stats.totalCostSold)}`} />
+            <FinRow label="Comissões pagas" value={`- ${fmtK(stats.totalCommissions)}`} />
+            <FinRow label="Lucro líquido realizado" value={fmtK(stats.totalProfit)} positive={stats.totalProfit > 0} bold />
+            <FinRow label="Ticket médio" value={fmtK(stats.avgTicket)} />
+            <FinRow label={`Lucro médio / ${labels.itemSingular.toLowerCase()}`} value={fmtK(stats.profitPerItem)} positive={stats.profitPerItem > 0} />
+            <FinRow label="Margem média" value={`${stats.avgMargin.toFixed(0)}%`} positive={stats.avgMargin >= 15} />
           </div>
         </div>
         <div>
-          <h2 className="font-display text-lg font-bold mb-4">Trocas e operações</h2>
+          <h2 className="font-display text-lg font-bold mb-1">Estoque e operações</h2>
+          <p className="text-xs text-muted-foreground mb-4">Posição atual do negócio</p>
           <div className="space-y-0">
+            <FinRow label="Capital investido (estoque)" value={fmtK(stats.totalInvested)} />
+            <FinRow label="Valor de venda do estoque" value={fmtK(stats.totalInventoryValue)} />
+            <FinRow label="Lucro potencial (estoque)" value={fmtK(stats.totalProfitPotential)} positive={stats.totalProfitPotential > 0} bold />
             <FinRow label="Total de vendas" value={`${stats.totalSales}`} />
             <FinRow label="Vendas este mês" value={`${stats.thisMonthSales}`} />
+            <FinRow label="Faturamento mês anterior" value={fmtK(stats.prevMonthRevenue)} />
             <FinRow label="Trocas realizadas" value={`${stats.tradesCount}`} />
             <FinRow label="Lucro em trocas" value={fmtK(stats.tradesProfit)} positive={stats.tradesProfit > 0} />
-            <FinRow label="Margem média" value={`${stats.avgMargin.toFixed(0)}%`} positive={stats.avgMargin >= 15} />
+            {stats.capitalAtRisk > 0 && <FinRow label="Capital em risco (+30d)" value={fmtK(stats.capitalAtRisk)} negative />}
           </div>
         </div>
       </section>
@@ -506,10 +548,16 @@ const Dashboard = () => {
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{v.brand} {v.model} <span className="text-muted-foreground font-normal">{v.year_fab}</span></p>
-                  <p className="text-[11px] text-muted-foreground">{v.days}d em estoque</p>
+                  <p className="text-[11px] text-muted-foreground">{v.days}d em estoque · Custo: {fmt(v.total_cost)}</p>
+                </div>
+
+                <div className="text-right shrink-0 hidden sm:block">
+                  <p className="text-[10px] text-muted-foreground">Venda</p>
+                  <p className="text-sm font-medium tabular-nums">{fmt(v.listing_price)}</p>
                 </div>
 
                 <div className="text-right shrink-0">
+                  <p className="text-[10px] text-muted-foreground">Lucro</p>
                   <p className={`text-sm font-bold tabular-nums ${v.profit >= 0 ? "text-primary" : "text-destructive"}`}>
                     {v.profit >= 0 ? "+" : ""}{fmt(v.profit)}
                   </p>
@@ -570,6 +618,15 @@ const ItemRow = ({ item: v, onNavigate, onMarkSold, onReducePrice, isSelling, is
             }`}>{v.days}d</Badge>
           </div>
           <p className="text-[11px] text-muted-foreground mt-0.5">{v.suggestion}</p>
+        </div>
+
+        <div>
+          <p className="text-[10px] text-muted-foreground">Custo</p>
+          <p className="text-sm font-medium">{fmt(v.total_cost)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-muted-foreground">Preço de venda</p>
+          <p className="text-sm font-medium">{fmt(v.listing_price)}</p>
         </div>
 
         <div className="flex items-center gap-4 mt-2 flex-wrap">
