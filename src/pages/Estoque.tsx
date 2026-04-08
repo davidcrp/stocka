@@ -77,8 +77,11 @@ const Estoque = () => {
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+    queryClient.invalidateQueries({ queryKey: ["vehicle-detail"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     queryClient.invalidateQueries({ queryKey: ["vendas-data"] });
+    queryClient.invalidateQueries({ queryKey: ["trocas-data"] });
+    queryClient.invalidateQueries({ queryKey: ["leads"] });
   };
 
   const totalCost = form.purchase_price + form.reconditioning_cost + form.transport_cost;
@@ -140,13 +143,31 @@ const Estoque = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("vehicles").delete().eq("id", id);
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: `${labels.itemSingular} excluído` });
-      invalidateAll();
+    const previousVehicles = queryClient.getQueryData<Vehicle[]>(["vehicles"]) || [];
+
+    queryClient.setQueryData<Vehicle[]>(["vehicles"], (current = []) => current.filter((vehicle) => vehicle.id !== id));
+
+    const { data, error } = await supabase.functions.invoke("delete-vehicle", {
+      body: { vehicleId: id },
+    });
+
+    if (error || !data?.success) {
+      queryClient.setQueryData<Vehicle[]>(["vehicles"], previousVehicles);
+
+      let errorMessage = data?.error || error?.message || "Não foi possível excluir o item.";
+      const functionError = error as { context?: Response; message?: string } | null;
+
+      if (functionError?.context) {
+        const payload = await functionError.context.json().catch(() => null);
+        errorMessage = payload?.error || errorMessage;
+      }
+
+      toast({ title: "Erro ao excluir", description: errorMessage, variant: "destructive" });
+      return;
     }
+
+    toast({ title: `${labels.itemSingular} excluído com sucesso` });
+    invalidateAll();
   };
 
   const handleOpenSell = useCallback((v: Vehicle, e?: React.MouseEvent) => {
