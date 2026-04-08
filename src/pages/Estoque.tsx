@@ -518,17 +518,17 @@ const Estoque = () => {
                   </div>
                 )}
 
-                <div className="mt-3 pt-3 border-t border-border/30 flex items-center gap-2">
+                <div className="mt-3 pt-3 border-t border-border/30 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   {v.status === "em_estoque" && (
                     <Button size="sm" className="flex-1 text-xs h-11 min-h-[44px] bg-primary text-primary-foreground"
                       onClick={(e) => handleOpenSell(v, e)}>
                       <Tag className="w-3.5 h-3.5 mr-1" /> {labels.sellItem}
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" className="flex-1 text-xs h-11 min-h-[44px]" onClick={() => openEdit(v)}>
+                  <Button size="sm" variant="outline" className="flex-1 text-xs h-11 min-h-[44px]" onClick={(e) => { e.stopPropagation(); openEdit(v); }}>
                     <Pencil className="w-3.5 h-3.5 mr-1" /> Editar
                   </Button>
-                  <label>
+                  <label onClick={(e) => e.stopPropagation()}>
                     <Button size="sm" variant="outline" className="text-xs h-11 min-h-[44px] w-11" type="button" disabled={uploadingPhotos}
                       onClick={() => document.getElementById(`photo-${v.id}`)?.click()}>
                       <Upload className="w-3.5 h-3.5" />
@@ -538,11 +538,11 @@ const Estoque = () => {
                   </label>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button size="sm" variant="ghost" className="h-11 min-h-[44px] w-11 p-0 text-destructive hover:text-destructive">
+                      <Button size="sm" variant="ghost" className="h-11 min-h-[44px] w-11 p-0 text-destructive hover:text-destructive" onClick={(e) => e.stopPropagation()}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-card border-border max-w-[90vw] sm:max-w-lg">
+                    <AlertDialogContent className="bg-card border-border max-w-[90vw] sm:max-w-lg" onClick={(e) => e.stopPropagation()}>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Excluir {labels.itemSingular.toLowerCase()}?</AlertDialogTitle>
                         <AlertDialogDescription>{labels.deleteConfirm.replace("O veículo", `${v.brand} ${v.model}`)}</AlertDialogDescription>
