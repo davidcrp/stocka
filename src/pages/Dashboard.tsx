@@ -31,13 +31,14 @@ type ItemAging = {
 type Stats = {
   inStock: number; totalInvested: number; totalInventoryValue: number;
   totalProfitPotential: number; avgDaysToSell: number; totalSales: number;
-  totalProfit: number; thisMonthProfit: number; thisMonthSales: number;
-  prevMonthProfit: number; prevMonthSales: number;
+  totalRevenue: number; totalCostSold: number; totalCommissions: number;
+  totalProfit: number; thisMonthRevenue: number; thisMonthProfit: number; thisMonthSales: number;
+  prevMonthRevenue: number; prevMonthProfit: number; prevMonthSales: number;
   chartData: { month: string; revenue: number; profit: number }[];
   items: ItemAging[];
   greenCount: number; yellowCount: number; redCount: number;
   tradesCount: number; tradesProfit: number;
-  avgMargin: number; profitPerItem: number;
+  avgMargin: number; profitPerItem: number; avgTicket: number;
   capitalAtRisk: number; highDemandCount: number;
 };
 
