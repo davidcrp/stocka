@@ -74,7 +74,14 @@ const fetchDashboardStats = async (): Promise<Stats> => {
   const totalInvested = inStock.reduce((s, v) => s + calcTotalCost(v), 0);
   const totalInventoryValue = inStock.reduce((s, v) => s + (v.listing_price || 0), 0);
   const totalProfitPotential = totalInventoryValue - totalInvested;
-  const totalProfit = sales.reduce((s, sale) => s + calcProfit(sale), 0);
+
+  const totalRevenue = sales.reduce((s, sale) => s + (sale.final_price || 0), 0);
+  const totalCostSold = sales.reduce((s, sale) => {
+    const v = sale.vehicles as any;
+    return s + (v?.purchase_price || 0) + (v?.reconditioning_cost || 0) + (v?.transport_cost || 0) + (expensesByVehicle[sale.vehicle_id] || 0);
+  }, 0);
+  const totalCommissions = sales.reduce((s, sale) => s + (sale.commission || 0), 0);
+  const totalProfit = totalRevenue - totalCostSold - totalCommissions;
 
   const now = new Date();
   const thisMonthStart = startOfMonth(now);
@@ -86,7 +93,9 @@ const fetchDashboardStats = async (): Promise<Stats> => {
     return d >= prevMonthStart && d < thisMonthStart;
   });
 
+  const thisMonthRevenue = thisMonthSalesArr.reduce((s, sale) => s + (sale.final_price || 0), 0);
   const thisMonthProfit = thisMonthSalesArr.reduce((s, sale) => s + calcProfit(sale), 0);
+  const prevMonthRevenue = prevMonthSalesArr.reduce((s, sale) => s + (sale.final_price || 0), 0);
   const prevMonthProfit = prevMonthSalesArr.reduce((s, sale) => s + calcProfit(sale), 0);
 
   const chartData: { month: string; revenue: number; profit: number }[] = [];
