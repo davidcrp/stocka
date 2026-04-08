@@ -442,7 +442,17 @@ const Dashboard = () => {
                 )}
                 <div className="p-4">
                   <p className="text-sm font-semibold">{v.brand} {v.model} <span className="text-muted-foreground font-normal">{v.year_fab}</span></p>
-                  <div className="flex items-baseline justify-between mt-2">
+                  <div className="grid grid-cols-2 gap-1 mt-2">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Custo</p>
+                      <p className="text-xs font-medium tabular-nums">{fmt(v.total_cost)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Venda</p>
+                      <p className="text-xs font-medium tabular-nums">{fmt(v.listing_price)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-baseline justify-between mt-2 pt-2 border-t border-border/20">
                     <p className="font-display text-lg font-black text-primary">+{fmt(v.profit)}</p>
                     <p className="text-[11px] text-muted-foreground">{v.days}d · {v.margin.toFixed(0)}%</p>
                   </div>
