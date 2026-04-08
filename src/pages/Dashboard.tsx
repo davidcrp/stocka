@@ -503,9 +503,6 @@ const Dashboard = () => {
           </div>
         </div>
       </section>
-          </div>
-        </div>
-      </section>
 
       {/* SECTION 9 — Priority ranking */}
       {stats.items.length > 0 && (
