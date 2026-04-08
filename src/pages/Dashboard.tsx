@@ -538,10 +538,16 @@ const Dashboard = () => {
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{v.brand} {v.model} <span className="text-muted-foreground font-normal">{v.year_fab}</span></p>
-                  <p className="text-[11px] text-muted-foreground">{v.days}d em estoque</p>
+                  <p className="text-[11px] text-muted-foreground">{v.days}d em estoque · Custo: {fmt(v.total_cost)}</p>
+                </div>
+
+                <div className="text-right shrink-0 hidden sm:block">
+                  <p className="text-[10px] text-muted-foreground">Venda</p>
+                  <p className="text-sm font-medium tabular-nums">{fmt(v.listing_price)}</p>
                 </div>
 
                 <div className="text-right shrink-0">
+                  <p className="text-[10px] text-muted-foreground">Lucro</p>
                   <p className={`text-sm font-bold tabular-nums ${v.profit >= 0 ? "text-primary" : "text-destructive"}`}>
                     {v.profit >= 0 ? "+" : ""}{fmt(v.profit)}
                   </p>
